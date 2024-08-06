@@ -25,6 +25,9 @@ let titleTextSize;
 let registerLabels;
 let instructionLabels;
 
+let inputField;
+let buttonWidth;
+
 let rsTag = 'A'; // Starter tag
 
 let RAT;
@@ -35,6 +38,10 @@ let rsALU;
 
 let memory = [];
 
+let resetButtonPos = {x: 0, y: 0};
+let loadButtonPos = {x: 0, y: 0};
+let stepButtonPos = {x: 0, y: 0};
+
 function setup() {
   textFont('Courier New');
   smooth();
@@ -42,7 +49,7 @@ function setup() {
   s = min(windowWidth/560, 5); // Eyeballed
 
   tableOuterStrokeWidth = 1*s;
-  tableInnerStrokeWidth = 1*s/2;
+  tableInnerStrokeWidth = 1*s/3;
   rowHeight = 10*s;
   labelTextSize = 5*s;
   rowLabelTextShift = -2*s;
@@ -52,6 +59,7 @@ function setup() {
   cdbY = 2*tablePaddingTop + numRegisters*rowHeight;
   titleTextSize = 18.5*s;
   versionTextSize = 10*s;
+  buttonWidth = 40*s;
 
   createCanvas(windowWidth, 3*tablePaddingTop + numRegisters*rowHeight);
   
@@ -65,95 +73,7 @@ function setup() {
     instructionLabels.push(i);
   }
   
-  inst = drawTable(
-    {
-      pos: {x: tablePaddingLeft, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
-      rows: numInstructions,
-      width: 90*s,
-      divs: [90*s],
-      columnLabels: ['Instruction Buffer'],
-      rowLabels: instructionLabels,
-      initValue: {instruction: ''},
-      values: [],
-      outputValue: {},
-      outputLabel: ''
-    }, false, true
-  );
-  
-  rsALU = drawTable(
-    {
-      pos: {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
-      rows: numInstructions-2,
-      width: 120*s,
-      divs: [20*s, 60*s, 70*s, 110*s],
-      columnLabels: ['OpCode', 'Operand 1', 'V', 'Operand 2', 'V'],
-      rowLabels: [],
-      initValue: {opcode: '', operands: [{value: 0, v: 0}, {value: 0, v: 0}]},
-      values: [],
-      outputValue: {tag: '', value: 0},
-      outputLabel: 'Arithmetic-Logic Unit'
-    }, true, true
-  );
-  
-  rsLSU = drawTable(
-    {
-      pos: {x: tablePaddingLeft + 2*tableSeparation + inst.width + rsALU.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
-      rows: numInstructions-2,
-      width: 120*s,
-      divs: [20*s, 60*s, 70*s, 110*s],
-      columnLabels: ['OpCode', 'Operand 1', 'V', 'Operand 2', 'V'],
-      rowLabels: [],
-      initValue: {opcode: '', operands: [{value: 0, v: 0}, {value: 0, v: 0}]},
-      values: [],
-      outputValue: {tag: '', value: 0},
-      outputLabel: 'Load-Store Unit'
-    }, true, true
-  );
-  
-  // rsLSU = drawTable(
-  //   {
-  //     pos: {},
-  //     rows: numInstructions,
-  //     width: 70*s,
-  //     divs: [20*s, 60*s],
-  //     columnLabels: ['OpCode', 'Operand', 'V'],
-  //     rowLabels: [],
-  //     initValue: {opcode: '', operands: [{operand: 0, v: 0}]},
-  //     values: [],
-  //     outputValue: {},
-  //     outputLabel: ''
-  //   }, true, true
-  // );
-
-  RAT = drawTable(
-    {
-      pos: {x: tablePaddingLeft + 3*tableSeparation + inst.width + rsALU.width + rsLSU.width, y: tablePaddingTop},
-      rows: numRegisters,
-      width: 60*s,
-      divs: [10*s, 50*s],
-      columnLabels: ['Tag', 'Value', 'V'],
-      rowLabels: registerLabels,
-      initValue: {tag: '~', value: 0, v: 0},
-      values: [],
-      outputValue: {},
-      outputLabel: ''
-    }, false, true
-  );
-  
-  reg = drawTable(
-    {
-      pos: {x: tablePaddingLeft + 4*tableSeparation + inst.width + rsALU.width + rsLSU.width + RAT.width, y: tablePaddingTop},
-      rows: numRegisters,
-      width: 40*s,
-      divs: [40*s],
-      columnLabels: ['Value'],
-      rowLabels: registerLabels,
-      initValue: {value: 0},
-      values: [],
-      outputValue: {},
-      outputLabel: ''
-    }, false, true
-  );
+  initTables();
 
   document.body.style.backgroundColor = `rgb(${bgColor},${bgColor},${bgColor})`;
   inputField = document.getElementById('textArea');
@@ -176,18 +96,26 @@ function setup() {
   inputField.style.padding = 0.1*s;
   inputField.style.fontSize = `${4.8*s}px`;
 
-  document.getElementById('textArea').addEventListener('input', function () {
+  inputField.addEventListener('input', function () {
     const lines = this.value.split('\n').map(line => line.substring(0, 'INST [RXX], [0xXXXX], [0xXXXX]'.length));
     this.value = lines.slice(0, numInstructions).join('\n');
     if (lines.length > numInstructions) {
       this.selectionStart = this.selectionEnd = this.value.length;
     }
   });
+
+  resetButtonPos = {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop};
+  loadButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 2*rowHeight};
+  stepButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4*rowHeight};
 }
   
 function draw() {
+  cursor('');
   background(bgColor);
   drawTitle();
+  drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET');
+  drawButton(loadButtonPos.x, loadButtonPos.y, 'LOAD');
+  drawButton(stepButtonPos.x, stepButtonPos.y, 'STEP', false);
   drawInstructionUnit();
   drawCDB();
   drawTable(RAT);
@@ -195,6 +123,21 @@ function draw() {
   drawTable(inst);
   drawTable(rsALU);
   drawTable(rsLSU);
+}
+
+function drawButton(x, y, label, connectLeft = true) {
+  if (connectLeft) {
+    setConfigTableRows(tableInnerStrokeWidth);
+    line(x - tableSeparation, y + rowHeight/2, x, y + rowHeight/2);
+  }
+  setConfigTableRows(tableOuterStrokeWidth);
+  if (mouseX > x && mouseX < x+buttonWidth && mouseY > y && mouseY < y + rowHeight) {
+    stroke(titleColor);
+    cursor('pointer');
+  }
+  rect(x, y, buttonWidth, rowHeight);
+  setConfigLabels(labelTextSize, 'center');
+  text(label, x + buttonWidth/2, y + rowHeight/2+0.5*s);
 }
 
 function drawInstructionUnit() {
@@ -295,6 +238,126 @@ function setConfigTableRows(w) {
   strokeWeight(w);
 }
 
+function initTables() {
+  inst = drawTable(
+    {
+      pos: {x: tablePaddingLeft, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
+      rows: numInstructions,
+      width: 90*s,
+      divs: [90*s],
+      columnLabels: ['Instruction Buffer'],
+      rowLabels: instructionLabels,
+      initValue: {instruction: ''},
+      values: [],
+      outputValue: {},
+      outputLabel: ''
+    }, false, true
+  );
+  
+  rsALU = drawTable(
+    {
+      pos: {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
+      rows: numInstructions-2,
+      width: 120*s,
+      divs: [20*s, 60*s, 70*s, 110*s],
+      columnLabels: ['OpCode', 'Operand 1', 'V', 'Operand 2', 'V'],
+      rowLabels: [],
+      initValue: {opcode: '', operands: [{value: 0, v: 0}, {value: 0, v: 0}]},
+      values: [],
+      outputValue: {tag: '', value: 0},
+      outputLabel: 'Arithmetic-Logic Unit'
+    }, true, true
+  );
+  
+  rsLSU = drawTable(
+    {
+      pos: {x: tablePaddingLeft + 2*tableSeparation + inst.width + rsALU.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
+      rows: numInstructions-2,
+      width: 120*s,
+      divs: [20*s, 60*s, 70*s, 110*s],
+      columnLabels: ['OpCode', 'Operand 1', 'V', 'Operand 2', 'V'],
+      rowLabels: [],
+      initValue: {opcode: '', operands: [{value: 0, v: 0}, {value: 0, v: 0}]},
+      values: [],
+      outputValue: {tag: '', value: 0},
+      outputLabel: 'Load-Store Unit'
+    }, true, true
+  );
+  
+  // rsLSU = drawTable(
+  //   {
+  //     pos: {},
+  //     rows: numInstructions,
+  //     width: 70*s,
+  //     divs: [20*s, 60*s],
+  //     columnLabels: ['OpCode', 'Operand', 'V'],
+  //     rowLabels: [],
+  //     initValue: {opcode: '', operands: [{operand: 0, v: 0}]},
+  //     values: [],
+  //     outputValue: {},
+  //     outputLabel: ''
+  //   }, true, true
+  // );
+
+  RAT = drawTable(
+    {
+      pos: {x: tablePaddingLeft + 3*tableSeparation + inst.width + rsALU.width + rsLSU.width, y: tablePaddingTop},
+      rows: numRegisters,
+      width: 60*s,
+      divs: [10*s, 50*s],
+      columnLabels: ['Tag', 'Value', 'V'],
+      rowLabels: registerLabels,
+      initValue: {tag: '~', value: 0, v: 0},
+      values: [],
+      outputValue: {},
+      outputLabel: ''
+    }, false, true
+  );
+  
+  reg = drawTable(
+    {
+      pos: {x: tablePaddingLeft + 4*tableSeparation + inst.width + rsALU.width + rsLSU.width + RAT.width, y: tablePaddingTop},
+      rows: numRegisters,
+      width: 40*s,
+      divs: [40*s],
+      columnLabels: ['Value'],
+      rowLabels: registerLabels,
+      initValue: {value: 0},
+      values: [],
+      outputValue: {},
+      outputLabel: ''
+    }, false, true
+  );
+}
+
+function reset() {
+  rsTag = 'A';
+  initTables();
+  inputField.value = '';
+}
+
+function load() {
+  console.log('TODO');
+}
+
+function step() {
+  console.log('TODO');
+}
+
+function mouseHover(pos, w, h) {
+  return mouseX > pos.x && mouseX < pos.x + w && mouseY > pos.y && mouseY < pos.y + h;
+}
+
+function mouseClicked() {
+  if (mouseHover(resetButtonPos, buttonWidth, rowHeight)) {
+    reset();
+  } else if (mouseHover(loadButtonPos, buttonWidth, rowHeight)) {
+    load();
+  }  else if (mouseHover(stepButtonPos, buttonWidth, rowHeight)) {
+    step();
+  }
+}
+
 // Instructions
 
 function add(v1, v2) {
@@ -309,11 +372,11 @@ function mul(v1, v2) {
   return constrain(v1 * v2, 0, maxValue);
 }
 
-function store(v1, v2) {
+function st(v1, v2) {
   memory[v1] = v2;
 }
 
-function load(v1) {
+function ld(v1) {
   if (memory[v1] === undefined) {
     memory[v1] = floor(random(0, maxValue/8));
   }

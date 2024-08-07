@@ -12,6 +12,7 @@ const cdbStrokeColor = 100;
 const titleColor = 130;
 const tableTextColor = 150;
 const tableTextDefaultColor = 50;
+const buttonHighlightColor = 200;
 
 let s;
 
@@ -43,6 +44,8 @@ let rsALU;
 let memory = [];
 
 let instructionLoadIndex = 0;
+const maxCharsPerInstruction = 'INST [RXX], [0xXXXX], [0xXXXX]'.length;
+let qsInstructionInput;
 
 let resetButtonPos = {x: 0, y: 0};
 let bufferButtonPos = {x: 0, y: 0};
@@ -53,7 +56,7 @@ function setup() {
   textFont('Courier New');
   smooth();
   
-  s = min(windowWidth/470, 5); // Eyeballed
+  s = min(windowWidth/475, 5); // Eyeballed
 
   tableOuterStrokeWidth = s;
   tableInnerStrokeWidth = s;
@@ -102,17 +105,24 @@ function setup() {
   inputField.style.borderColor = `rgb(${tableLabelColor},${tableLabelColor},${tableLabelColor})`;
   inputField.style.outline = 'none';
   inputField.style.padding = 0.1*s;
-  inputField.style.fontSize = `${4.8*s}px`;
+  inputField.style.fontSize = `${5*s}px`;
 
   inputField.addEventListener('input', 
     () => {
-      const lines = inputField.value.split('\n').map(line => line.substring(0, 'INST [RXX], [0xXXXX], [0xXXXX]'.length));
+      const lines = inputField.value.split('\n').map(line => line.substring(0, maxCharsPerInstruction));
       inputField.value = lines.slice(0, numInstructions).join('\n');
       if (lines.length > numInstructions) {
         inputField.selectionStart = inputField.selectionEnd = inputField.value.length;
       }
     }
   );
+
+  qsInstructionInput = parseQsParams();
+  if (qsInstructionInput !== '') {
+    inputField.placeholder = '';
+    inputField.value = qsInstructionInput.join('\n');
+    buffer();
+  }
 
   resetButtonPos = {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop};
   bufferButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 1.2*rowHeight};
@@ -146,7 +156,7 @@ function drawButton(x, y, label, connectLeft = true) {
   }
   setConfigTableRows(tableOuterStrokeWidth);
   if (mouseX > x && mouseX < x+buttonWidth && mouseY > y && mouseY < y + rowHeight) {
-    stroke(titleColor);
+    stroke(buttonHighlightColor);
     cursor('pointer');
   }
   rect(x, y, buttonWidth, rowHeight);
@@ -263,8 +273,8 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
       rows: numInstructions,
-      width: 90*s,
-      divs: [90*s],
+      width: 94*s,
+      divs: [94*s],
       columnLabels: ['Instruction Buffer'],
       rowLabels: instructionLabels,
       initValue: {instruction: ''},
@@ -356,6 +366,12 @@ function buffer() {
   }
   buffered = instructionLoadIndex - buffered;
   inputField.value = value.split('\n').filter(line => line.trim() !== '').slice(buffered).join('\n');
+  if (inputField.value === '') {
+    inputField.placeholder = '';
+  }
+  if (buffered !== 0) {
+    window.history.pushState(null, "", '?instructions=' + inst.values.filter(value => value.instruction !== '').map(value => value.instruction).join('|'));
+  }
 }
 
 function issue() {
@@ -484,4 +500,13 @@ function deepEqual(x, y) {
     ok(x).length === ok(y).length &&
       ok(x).every(key => deepEqual(x[key], y[key]))
   ) : (x === y);
+}
+
+function parseQsParams() {
+  let params = new URLSearchParams(window.location.href.split('?').pop());
+  let instructions = '';
+  if (params.has('instructions')) {
+    instructions = params.get('instructions')
+  }
+  return instructions.split('|').slice(0, numInstructions).map(line => line.slice(0, maxCharsPerInstruction));
 }

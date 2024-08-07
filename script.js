@@ -341,14 +341,14 @@ function load() {
   if (value === '') {
     value = inputField.placeholder;
   }
-  for (let [i, instruction] of value.split('\n').map(line => line.toUpperCase()).entries()) {
+  for (let [i, instruction] of value.split('\n').map(line => line.toUpperCase()).filter(line => line.trim() !== '').entries()) {
     if (instructionLoadIndex < numInstructions) {
       inst.values[instructionLoadIndex].instruction = instruction;
       instructionLoadIndex++;
     }
   }
   loaded = instructionLoadIndex - loaded;
-  inputField.value = value.split('\n').slice(loaded).join('\n');
+  inputField.value = value.split('\n').filter(line => line.trim() !== '').slice(loaded).join('\n');
 }
 
 function step() {

@@ -45,8 +45,9 @@ let memory = [];
 let instructionLoadIndex = 0;
 
 let resetButtonPos = {x: 0, y: 0};
-let loadButtonPos = {x: 0, y: 0};
-let stepButtonPos = {x: 0, y: 0};
+let bufferButtonPos = {x: 0, y: 0};
+let issueButtonPos = {x: 0, y: 0};
+let executeButtonPos = {x: 0, y: 0};
 
 function setup() {
   textFont('Courier New');
@@ -114,8 +115,9 @@ function setup() {
   );
 
   resetButtonPos = {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop};
-  loadButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 2*rowHeight};
-  stepButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4*rowHeight};
+  bufferButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 1.2*rowHeight};
+  issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 3.4*rowHeight};
+  executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.6*rowHeight};
 }
   
 function draw() {
@@ -123,8 +125,9 @@ function draw() {
   background(bgColor);
   drawTitle();
   drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET');
-  drawButton(loadButtonPos.x, loadButtonPos.y, 'LOAD');
-  drawButton(stepButtonPos.x, stepButtonPos.y, 'STEP', false);
+  drawButton(bufferButtonPos.x, bufferButtonPos.y, 'BUFFER');
+  drawButton(issueButtonPos.x, issueButtonPos.y, 'ISSUE', false);
+  drawButton(executeButtonPos.x, executeButtonPos.y, 'EXECUTE', false);
   drawInstructionUnit();
   drawCDB();
   drawTable(RAT);
@@ -335,8 +338,8 @@ function reset() {
   // inputField.value = '';
 }
 
-function load() {
-  let loaded = instructionLoadIndex;
+function buffer() {
+  let buffered = instructionLoadIndex;
   let value = inputField.value;
   if (value === '') {
     value = inputField.placeholder;
@@ -347,11 +350,15 @@ function load() {
       instructionLoadIndex++;
     }
   }
-  loaded = instructionLoadIndex - loaded;
-  inputField.value = value.split('\n').filter(line => line.trim() !== '').slice(loaded).join('\n');
+  buffered = instructionLoadIndex - buffered;
+  inputField.value = value.split('\n').filter(line => line.trim() !== '').slice(buffered).join('\n');
 }
 
-function step() {
+function issue() {
+  console.log('TODO');
+}
+
+function execute() {
   console.log('TODO');
 }
 
@@ -362,10 +369,12 @@ function mouseHover(pos, w, h) {
 function mouseClicked() {
   if (mouseHover(resetButtonPos, buttonWidth, rowHeight)) {
     reset();
-  } else if (instructionLoadIndex < numInstructions && mouseHover(loadButtonPos, buttonWidth, rowHeight)) {
-    load();
-  }  else if (mouseHover(stepButtonPos, buttonWidth, rowHeight)) {
-    step();
+  } else if (instructionLoadIndex < numInstructions && mouseHover(bufferButtonPos, buttonWidth, rowHeight)) {
+    buffer();
+  }  else if (mouseHover(issueButtonPos, buttonWidth, rowHeight)) {
+    issue();
+  } else if (mouseHover(executeButtonPos, buttonWidth, rowHeight)) {
+    execute();
   }
 }
 

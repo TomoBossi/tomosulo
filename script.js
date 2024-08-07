@@ -9,7 +9,7 @@ const tableBgColor = 15;
 const tableLabelColor = 100;
 const tableStrokeColor = 100;
 const cdbStrokeColor = 100;
-const titleColor = 150;
+const titleColor = 130;
 const tableTextColor = 150;
 const tableTextDefaultColor = 50;
 
@@ -53,7 +53,7 @@ function setup() {
   textFont('Courier New');
   smooth();
   
-  s = min(windowWidth/525, 5); // Eyeballed
+  s = min(windowWidth/470, 5); // Eyeballed
 
   tableOuterStrokeWidth = s;
   tableInnerStrokeWidth = s;
@@ -61,10 +61,10 @@ function setup() {
   rowHeight = 10*s;
   labelTextSize = 5*s;
   rowLabelTextShift = -2*s;
-  tableSeparation = 25*s;
+  tableSeparation = 20*s;
   tablePaddingLeft = 12.5*s;
   tablePaddingTop = 15*s;
-  cdbY = 2*tablePaddingTop + numRegisters*rowHeight;
+  cdbY = 1.75*tablePaddingTop + numRegisters*rowHeight;
   titleTextSize = 12.5*s;
   versionTextSize = 6*s;
   buttonWidth = 40*s;
@@ -123,7 +123,7 @@ function setup() {
 function draw() {
   cursor('');
   background(bgColor);
-  drawTitle();
+  drawTitleCard();
   drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET');
   drawButton(bufferButtonPos.x, bufferButtonPos.y, 'BUFFER');
   drawButton(issueButtonPos.x, issueButtonPos.y, 'ISSUE', false);
@@ -162,15 +162,19 @@ function drawInstructionUnit() {
   text('Instruction Unit', inst.pos.x+inst.width/2, tablePaddingTop-0.8*rowHeight/2);
 }
 
-function drawTitle() {
+function drawTitleCard() {
+  strokeWeight(tableInnerStrokeWidth);
+  stroke(tableStrokeColor, 255*tableInnerStrokeOpacity);
+  fill(bgColor);
+  rect(rsALU.pos.x + buttonWidth + tableSeparation, tablePaddingTop, rsALU.width + rsLSU.width - buttonWidth, 56*s)
   strokeWeight(0);
   textStyle('bold');
   fill(titleColor);
   textSize(titleTextSize);
-  textAlign('right', 'top');
-  text('T0M0SUL0-16', rsLSU.pos.x + rsLSU.width, tablePaddingTop);
+  textAlign('left', 'top');
+  text('T0M0SUL0-16', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + 3*s);
   textSize(versionTextSize);
-  text('v0.0.0.1', rsLSU.pos.x + rsLSU.width, tablePaddingTop + titleTextSize);
+  text('v0.0.0.1', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + 3*s);
 }
 
 function drawCDB() {
@@ -220,10 +224,10 @@ function drawTable(table, tag = false, init = false) {
   if (!(Object.entries(table.outputValue).length === 0)) {
     setConfigTableRows(tableOuterStrokeWidth);
     quad(
-      table.pos.x+1.5*s, table.pos.y + table.rows*rowHeight,
+      table.pos.x+3*s, table.pos.y + table.rows*rowHeight,
       table.pos.x+table.width/2-(25-8.75)*s, table.pos.y + (table.rows+1)*rowHeight,
       table.pos.x+table.width/2+(25-8.75)*s, table.pos.y + (table.rows+1)*rowHeight,
-      table.pos.x-1.5*s+table.width, table.pos.y + table.rows*rowHeight
+      table.pos.x-3*s+table.width, table.pos.y + table.rows*rowHeight
     );
     rect(table.pos.x+table.width/2-(25-8.75)*s, table.pos.y+(table.rows+1)*rowHeight, 32.5*s, rowHeight);
     strokeWeight(tableInnerStrokeWidth);
@@ -304,8 +308,8 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft + 3*tableSeparation + inst.width + rsALU.width + rsLSU.width, y: tablePaddingTop},
       rows: numRegisters,
-      width: 60*s,
-      divs: [10*s, 50*s],
+      width: 42.5*s,
+      divs: [10*s, 32.5*s],
       columnLabels: ['Tag', 'Value', 'V'],
       rowLabels: registerLabels,
       initValue: {tag: '~', value: 0, v: 0},
@@ -319,8 +323,8 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft + 4*tableSeparation + inst.width + rsALU.width + rsLSU.width + RAT.width, y: tablePaddingTop},
       rows: numRegisters,
-      width: 40*s,
-      divs: [40*s],
+      width: 22.5*s,
+      divs: [22.5*s],
       columnLabels: ['Value'],
       rowLabels: registerLabels,
       initValue: {value: 0},

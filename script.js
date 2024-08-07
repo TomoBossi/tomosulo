@@ -97,7 +97,14 @@ function setup() {
   inputField.style.overflow = 'hidden';
   inputField.style.fontFamily = 'monospace';
   inputField.style.zindex = 10;
-  inputField.placeholder = 'MOV R1, 0xB0CA\nMOV R2, 0xB0CA\nADD R3, R1, R2';
+  inputField.placeholder = 'LDR R1, [R0]\n' +
+    'MOV R3, 0x0042\n' +
+    'MUL R5, R1, R2\n' +
+    'ADD R3, R1, R5\n' +
+    'SUB R3, R3, R2\n' +
+    'AND R6, R3, R5\n' +
+    'OR R7, R6, R3\n' +
+    'MUL R3, R7, R2';
   inputField.style.backgroundColor = 'transparent'; // `rgb(${tableBgColor},${tableBgColor},${tableBgColor})`;
   inputField.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   inputField.style.border = 'none'; // `${tableOuterStrokeWidth}px solid`;
@@ -118,7 +125,7 @@ function setup() {
   );
 
   qsInstructionInput = parseQsParams();
-  if (qsInstructionInput !== '') {
+  if (!(qsInstructionInput.length === 1 && qsInstructionInput[0] === '')) {
     inputField.placeholder = '';
     inputField.value = qsInstructionInput.join('\n');
     buffer();
@@ -508,5 +515,5 @@ function parseQsParams() {
   if (params.has('instructions')) {
     instructions = params.get('instructions')
   }
-  return instructions.split('|').slice(0, numInstructions).map(line => line.slice(0, maxCharsPerInstruction));
+  return instructions.split('|').slice(0, numInstructions*2).map(line => line.slice(0, maxCharsPerInstruction));
 }

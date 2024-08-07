@@ -56,7 +56,7 @@ function setup() {
   textFont('Courier New');
   smooth();
   
-  s = min(windowWidth/475, 5); // Eyeballed
+  s = min(windowWidth/432, 5); // Eyeballed
 
   tableOuterStrokeWidth = s;
   tableInnerStrokeWidth = s;
@@ -66,7 +66,7 @@ function setup() {
   rowLabelTextShift = -2*s;
   tableSeparation = 20*s;
   tablePaddingLeft = 12.5*s;
-  tablePaddingTop = 15*s;
+  tablePaddingTop = 12.5*s;
   cdbY = 1.75*tablePaddingTop + numRegisters*rowHeight;
   titleTextSize = 12.5*s;
   versionTextSize = 6*s;
@@ -133,8 +133,8 @@ function setup() {
 
   resetButtonPos = {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop};
   bufferButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 1.2*rowHeight};
-  issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 3.4*rowHeight};
-  executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.6*rowHeight};
+  issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 3.7*rowHeight};
+  executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight};
 }
   
 function draw() {
@@ -174,7 +174,7 @@ function drawButton(x, y, label, connectLeft = true) {
 function drawInstructionUnit() {
   setConfigTableRows(tableOuterStrokeWidth);
   line(inst.pos.x + inst.width/2, tablePaddingTop, inst.pos.x + inst.width/2, inst.pos.y - rowHeight);
-  rect(tablePaddingLeft, tablePaddingTop, inst.width, 56*s);
+  rect(tablePaddingLeft, tablePaddingTop, inst.width, 59*s);
   setConfigLabels(labelTextSize, 'center');
   text('Instruction Unit', inst.pos.x+inst.width/2, tablePaddingTop-0.8*rowHeight/2);
 }
@@ -183,7 +183,7 @@ function drawTitleCard() {
   strokeWeight(tableInnerStrokeWidth);
   stroke(tableStrokeColor, 255*tableInnerStrokeOpacity);
   fill(bgColor);
-  rect(rsALU.pos.x + buttonWidth + tableSeparation, tablePaddingTop, rsALU.width + rsLSU.width - buttonWidth, 56*s)
+  rect(rsALU.pos.x + buttonWidth + tableSeparation, tablePaddingTop, rsALU.width + rsLSU.width - buttonWidth, 59*s)
   strokeWeight(0);
   textStyle('bold');
   fill(titleColor);
@@ -310,11 +310,11 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft + 2*tableSeparation + inst.width + rsALU.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
       rows: numInstructions-2,
-      width: 105*s,
-      divs: [20*s, 30*s, 52.5*s, 62.5*s, 72.5*s, 95*s],
-      columnLabels: ['Code', 'Tag', 'Op.1', 'V', 'Tag', 'Op.2', 'V'],
+      width: 62.5*s,
+      divs: [20*s, 30*s, 52.5*s],
+      columnLabels: ['Code', 'Tag', 'Op.1', 'V'],
       rowLabels: [],
-      initValue: {opcode: '', operands: [{tag: '~', value: 0, v: 0}, {tag: '~', value: 0, v: 0}]},
+      initValue: {opcode: '', operands: [{tag: '~', value: 0, v: 0}]},
       values: [],
       outputValue: {tag: '', value: 0},
       outputLabel: 'LSU' // 'Load-Store Unit'
@@ -367,7 +367,7 @@ function buffer() {
   }
   for (let [i, instruction] of value.split('\n').map(line => line.toUpperCase()).filter(line => line.trim() !== '').entries()) {
     if (instructionLoadIndex < numInstructions) {
-      inst.values[instructionLoadIndex].instruction = instruction;
+      inst.values[instructionLoadIndex].instruction = parseInstruction(instruction);
       instructionLoadIndex++;
     }
   }
@@ -465,9 +465,11 @@ function drawTextRs(rs) {
     text(value.operands[0].tag, rs.pos.x + rs.divs[0] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     text(int2hex(value.operands[0].value), rs.pos.x + rs.divs[1] + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     text(value.operands[0].v, rs.pos.x + rs.divs[2] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
-    text(value.operands[1].tag, rs.pos.x + rs.divs[3] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
-    text(int2hex(value.operands[1].value), rs.pos.x + rs.divs[4] + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
-    text(value.operands[1].v, rs.pos.x + rs.divs[5] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    if (value.operands.length > 1) {
+      text(value.operands[1].tag, rs.pos.x + rs.divs[3] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+      text(int2hex(value.operands[1].value), rs.pos.x + rs.divs[4] + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+      text(value.operands[1].v, rs.pos.x + rs.divs[5] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    }
   }
 }
 
@@ -516,4 +518,9 @@ function parseQsParams() {
     instructions = params.get('instructions')
   }
   return instructions.split('|').slice(0, numInstructions*2).map(line => line.slice(0, maxCharsPerInstruction));
+}
+
+function parseInstruction(instruction) {
+  
+  return instruction;
 }

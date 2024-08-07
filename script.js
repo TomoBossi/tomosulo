@@ -64,8 +64,8 @@ function setup() {
   tablePaddingLeft = 12.5*s;
   tablePaddingTop = 15*s;
   cdbY = 2*tablePaddingTop + numRegisters*rowHeight;
-  titleTextSize = 18.5*s;
-  versionTextSize = 10*s;
+  titleTextSize = 12.5*s;
+  versionTextSize = 6*s;
   buttonWidth = 40*s;
 
   createCanvas(windowWidth, 3*tablePaddingTop + numRegisters*rowHeight);

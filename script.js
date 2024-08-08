@@ -2,7 +2,18 @@ p5.disableFriendlyErrors = true;
 
 const numRegisters = 16;
 const numInstructions = 8;
-const maxValue = 65535; // 0xFFFF
+const maxValue = 65535; // 0xFFFF, 16-bits
+
+const supportedInstructionsMap = {
+  ADD: {fn: add, numArgs: 2},
+  SUB: {fn: sub, numArgs: 2},
+  MUL: {fn: mul, numArgs: 2},
+  MOV: {fn: mov, numArgs: 1},
+  AND: {fn: and, numArgs: 2},
+  OR:  {fn: or, numArgs: 2},
+  LDR: {fn: ld, numArgs: 1},
+  STR: {fn: st, numArgs: 1}
+};
 
 const bgColor = 0;
 const tableBgColor = 15;
@@ -35,7 +46,7 @@ let buttonWidth;
 
 let rsTag = 'A'; // Starter tag
 
-let RAT;
+let rat;
 let reg;
 let inst;
 let rsLSU;
@@ -48,7 +59,7 @@ const maxCharsPerInstruction = 'INST [RXX], [0xXXXX], [0xXXXX]'.length;
 let qsInstructionInput;
 
 let resetButtonPos = {x: 0, y: 0};
-let bufferButtonPos = {x: 0, y: 0};
+let enqueueButtonPos = {x: 0, y: 0};
 let issueButtonPos = {x: 0, y: 0};
 let executeButtonPos = {x: 0, y: 0};
 
@@ -69,7 +80,7 @@ function setup() {
   tablePaddingTop = 12.5*s;
   cdbY = 1.75*tablePaddingTop + numRegisters*rowHeight;
   titleTextSize = 12.5*s;
-  versionTextSize = 6*s;
+  versionTextSize = 4.55*s;
   buttonWidth = 40*s;
 
   createCanvas(windowWidth, 3*tablePaddingTop + numRegisters*rowHeight);
@@ -128,11 +139,11 @@ function setup() {
   if (!(qsInstructionInput.length === 1 && qsInstructionInput[0] === '')) {
     inputField.placeholder = '';
     inputField.value = qsInstructionInput.join('\n');
-    buffer();
+    enqueue();
   }
 
   resetButtonPos = {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop};
-  bufferButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 1.2*rowHeight};
+  enqueueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 1.2*rowHeight};
   issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 3.7*rowHeight};
   executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight};
 }
@@ -142,12 +153,12 @@ function draw() {
   background(bgColor);
   drawTitleCard();
   drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET');
-  drawButton(bufferButtonPos.x, bufferButtonPos.y, 'BUFFER');
+  drawButton(enqueueButtonPos.x, enqueueButtonPos.y, 'ENQUEUE');
   drawButton(issueButtonPos.x, issueButtonPos.y, 'ISSUE', false);
   drawButton(executeButtonPos.x, executeButtonPos.y, 'EXECUTE', false);
   drawInstructionUnit();
   drawCDB();
-  drawTable(RAT);
+  drawTable(rat);
   drawTable(reg);
   drawTable(inst);
   drawTable(rsALU);
@@ -162,7 +173,7 @@ function drawButton(x, y, label, connectLeft = true) {
     line(x - tableSeparation, y + rowHeight/2, x, y + rowHeight/2);
   }
   setConfigTableRows(tableOuterStrokeWidth);
-  if (mouseX > x && mouseX < x+buttonWidth && mouseY > y && mouseY < y + rowHeight) {
+  if (label !== 'EXECUTE' && mouseX > x && mouseX < x+buttonWidth && mouseY > y && mouseY < y + rowHeight) {
     stroke(buttonHighlightColor);
     cursor('pointer');
   }
@@ -191,13 +202,13 @@ function drawTitleCard() {
   textAlign('left', 'top');
   text('T0M0SUL0-16', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + 3*s);
   textSize(versionTextSize);
-  text('v0.0.0.1', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + 3*s);
+  text("v0.0.0.0.1 - Cannot be trusted", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + 3*s);
 }
 
 function drawCDB() {
   setConfigTableRows(tableOuterStrokeWidth);
   line(inst.pos.x + inst.width/2, cdbY, reg.pos.x + reg.width/2, cdbY);
-  for (let table of [rsALU, rsLSU, RAT, reg, inst]) {
+  for (let table of [rsALU, rsLSU, rat, reg, inst]) {
     line(table.pos.x + table.width/2, cdbY, table.pos.x + table.width/2, cdbY - rowHeight*numInstructions/2 - tablePaddingTop);
   }
   setConfigLabels(labelTextSize, 'center');
@@ -282,7 +293,7 @@ function initTables() {
       rows: numInstructions,
       width: 94*s,
       divs: [94*s],
-      columnLabels: ['Instruction Buffer'],
+      columnLabels: ['Instruction Queue'],
       rowLabels: instructionLabels,
       initValue: {instruction: ''},
       values: [],
@@ -321,7 +332,7 @@ function initTables() {
     }, true, true
   );
 
-  RAT = drawTable(
+  rat = drawTable(
     {
       pos: {x: tablePaddingLeft + 3*tableSeparation + inst.width + rsALU.width + rsLSU.width, y: tablePaddingTop},
       rows: numRegisters,
@@ -338,7 +349,7 @@ function initTables() {
   
   reg = drawTable(
     {
-      pos: {x: tablePaddingLeft + 4*tableSeparation + inst.width + rsALU.width + rsLSU.width + RAT.width, y: tablePaddingTop},
+      pos: {x: tablePaddingLeft + 4*tableSeparation + inst.width + rsALU.width + rsLSU.width + rat.width, y: tablePaddingTop},
       rows: numRegisters,
       width: 22.5*s,
       divs: [22.5*s],
@@ -357,27 +368,38 @@ function reset() {
   initTables();
   instructionLoadIndex = 0;
   // inputField.value = '';
+  window.history.replaceState(null, '', '/');
 }
 
-function buffer() {
-  let buffered = instructionLoadIndex;
+function enqueue() {
+  let enqueued = instructionLoadIndex;
   let value = inputField.value;
   if (value === '') {
     value = inputField.placeholder;
   }
-  for (let [i, instruction] of value.split('\n').map(line => line.toUpperCase()).filter(line => line.trim() !== '').entries()) {
+
+  value = value.split('\n').filter(line => line.trim() !== '').map(line => formatInstructionDisplay(line));
+  if (value.includes('')) {
+    window.alert('Invalid or unsupported instruction(s) or operand(s)');
+    return;
+  }
+
+  for (let instruction of value) {
     if (instructionLoadIndex < numInstructions) {
-      inst.values[instructionLoadIndex].instruction = parseInstruction(instruction);
+      inst.values[instructionLoadIndex].instruction = instruction;
       instructionLoadIndex++;
     }
   }
-  buffered = instructionLoadIndex - buffered;
-  inputField.value = value.split('\n').filter(line => line.trim() !== '').slice(buffered).join('\n');
+  
+  enqueued = instructionLoadIndex - enqueued;
+  inputField.value = value.slice(enqueued).join('\n');
+  
   if (inputField.value === '') {
     inputField.placeholder = '';
   }
-  if (buffered !== 0) {
-    window.history.pushState(null, "", '?instructions=' + inst.values.filter(value => value.instruction !== '').map(value => value.instruction).join('|'));
+
+  if (enqueued !== 0) {
+    window.history.replaceState(null, '', '?instructions=' + inst.values.filter(value => value.instruction !== '').map(value => value.instruction).join('|'));
   }
 }
 
@@ -396,8 +418,8 @@ function mouseHover(pos, w, h) {
 function mouseClicked() {
   if (mouseHover(resetButtonPos, buttonWidth, rowHeight)) {
     reset();
-  } else if (instructionLoadIndex < numInstructions && mouseHover(bufferButtonPos, buttonWidth, rowHeight)) {
-    buffer();
+  } else if (instructionLoadIndex < numInstructions && mouseHover(enqueueButtonPos, buttonWidth, rowHeight)) {
+    enqueue();
   }  else if (mouseHover(issueButtonPos, buttonWidth, rowHeight)) {
     issue();
   } else if (mouseHover(executeButtonPos, buttonWidth, rowHeight)) {
@@ -417,6 +439,14 @@ function sub(v1, v2) {
 
 function mul(v1, v2) {
   return constrain(v1 * v2, 0, maxValue);
+}
+
+function and(v1, v2) {
+  return v1 & v2;
+}
+
+function or(v1, v2) {
+  return v1 | v2;
 }
 
 function mov(v1, v2) {
@@ -451,7 +481,7 @@ function setConfigTableText() {
 }
 
 function int2hex(value) {
-  return '0x'+value.toString(16).padStart(4, '0');
+  return '0x'+constrain(value, 0, maxValue).toString(16).padStart(4, '0').toUpperCase();
 }
 
 function drawTextRs(rs) {
@@ -475,14 +505,14 @@ function drawTextRs(rs) {
 
 function drawTextRAT() {
   setConfigTableText();
-  for (let [i, value] of RAT.values.entries()) {
+  for (let [i, value] of rat.values.entries()) {
     fill(tableTextColor);
-    if (deepEqual(value, RAT.initValue)) {
+    if (deepEqual(value, rat.initValue)) {
       fill(tableTextDefaultColor);
     }
-    text(value.tag, RAT.pos.x + 3.5*s, RAT.pos.y + (i+0.5)*rowHeight + 0.5*s);
-    text(int2hex(value.value), RAT.pos.x + RAT.divs[0] + 2*s, RAT.pos.y + (i+0.5)*rowHeight + 0.5*s);
-    text(value.v, RAT.pos.x + RAT.divs[1] + 3.5*s, RAT.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(value.tag, rat.pos.x + 3.5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(int2hex(value.value), rat.pos.x + rat.divs[0] + 2*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(value.v, rat.pos.x + rat.divs[1] + 3.5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
   }
 }
 
@@ -512,7 +542,7 @@ function deepEqual(x, y) {
 }
 
 function parseQsParams() {
-  let params = new URLSearchParams(window.location.href.split('?').pop());
+  const params = new URLSearchParams(window.location.href.split('?').pop());
   let instructions = '';
   if (params.has('instructions')) {
     instructions = params.get('instructions')
@@ -520,7 +550,45 @@ function parseQsParams() {
   return instructions.split('|').slice(0, numInstructions*2).map(line => line.slice(0, maxCharsPerInstruction));
 }
 
-function parseInstruction(instruction) {
-  
-  return instruction;
+function isRegister(string) {
+  if (string[0] === '[' && string.slice(-1) === ']') {
+    string = string.slice(1,-1);
+  }
+  const regNumber = Number(string.slice(1));
+  return string[0] === 'R' && string.length > 1 && !isNaN(regNumber) && Number.isInteger(regNumber) && regNumber >= 0 && regNumber < numRegisters;
+}
+
+function isValidValue(string) {
+  const number = Number(string);
+  return !isNaN(number) && Number.isInteger(number) && number >= 0 && number <= maxValue;
+}
+
+function areRegistersOrValues(strings) {
+  return strings.every(string => isRegister(string) || isValidValue(string));
+}
+
+function formatArg(arg) {
+  if (isValidValue(arg)) {
+    const number = Number(arg);
+    arg = int2hex(number);
+  }
+  return arg;
+}
+
+function formatInstructionDisplay(instruction) {
+  try {
+    let tokens = instruction.split(',');
+    tokens = tokens[0].split(' ').filter(token => token !== '').concat(tokens.slice(1));
+    tokens = tokens.map(token => token.trim().toUpperCase());
+    let instructionSupported = supportedInstructionsMap.hasOwnProperty(tokens[0]);
+    let matchingNumArgs = tokens.length - 2 === supportedInstructionsMap[tokens[0]].numArgs;
+    let secondTokenIsRegister = isRegister(tokens[1]);
+    let allArgsAreRegistersOrValues = areRegistersOrValues(tokens.slice(2));
+    if (instructionSupported && matchingNumArgs && secondTokenIsRegister && allArgsAreRegistersOrValues) {
+      return tokens[0] + ' ' + tokens.slice(1).map(token => formatArg(token)).join(', ');
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  return '';
 }

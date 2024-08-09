@@ -368,7 +368,7 @@ function reset() {
   initTables();
   instructionLoadIndex = 0;
   // inputField.value = '';
-  window.history.replaceState(null, '', '/');
+  // window.history.replaceState(null, '', '/');
 }
 
 function enqueue() {
@@ -559,6 +559,9 @@ function isRegister(string) {
 }
 
 function isValidValue(string) {
+  if (string[0] === '[' && string.slice(-1) === ']') {
+    string = string.slice(1,-1);
+  }
   const number = Number(string);
   return !isNaN(number) && Number.isInteger(number) && number >= 0 && number <= maxValue;
 }
@@ -569,8 +572,15 @@ function areRegistersOrValues(strings) {
 
 function formatArg(arg) {
   if (isValidValue(arg)) {
+    let indirect = arg[0] === '[';
+    if (indirect) {
+      arg = arg.slice(1,-1);
+    }
     const number = Number(arg);
     arg = int2hex(number);
+    if (indirect) {
+      arg = '[' + arg + ']'
+    }
   }
   return arg;
 }

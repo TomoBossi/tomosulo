@@ -112,10 +112,10 @@ function setup() {
     'MOV R3, 0x0042\n' +
     'MUL R5, R1, R2\n' +
     'ADD R3, R1, R5\n' +
-    'SUB R3, [R3], R2\n' +
+    'SUB R3, [R3], R5\n' +
     'AND R6, R3, R5\n' +
     'OR R7, R6, R3\n' +
-    'MUL R3, R7, R2';
+    'MUL R3, R7, 0xFAFA';
   inputField.style.backgroundColor = 'transparent'; // `rgb(${tableBgColor},${tableBgColor},${tableBgColor})`;
   inputField.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   inputField.style.border = 'none'; // `${tableOuterStrokeWidth}px solid`;

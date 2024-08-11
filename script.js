@@ -5,14 +5,14 @@ const numInstructions = 8;
 const maxValue = 65535; // 0xFFFF, 16-bits
 
 const supportedInstructionsMap = {
-  ADD: {fn: add, numArgs: 2},
-  SUB: {fn: sub, numArgs: 2},
-  MUL: {fn: mul, numArgs: 2},
-  MOV: {fn: mov, numArgs: 1},
-  AND: {fn: and, numArgs: 2},
-  OR:  {fn: or, numArgs: 2},
-  LDR: {fn: ld, numArgs: 1},
-  STR: {fn: st, numArgs: 1}
+  ADD: {fn: add, numArgs: 2, rs: 'ALU'},
+  SUB: {fn: sub, numArgs: 2, rs: 'ALU'},
+  MUL: {fn: mul, numArgs: 2, rs: 'ALU'},
+  AND: {fn: and, numArgs: 2, rs: 'ALU'},
+  OR:  {fn: or,  numArgs: 2, rs: 'ALU'},
+  MOV: {fn: () => {}, numArgs: 1, rs: 'LSU'},
+  LDR: {fn: ld, numArgs: 1, rs: 'LSU'},
+  // STR: {fn: st, numArgs: 1},
 };
 
 const bgColor = 0;
@@ -67,7 +67,7 @@ function setup() {
   textFont('Courier New');
   smooth();
   
-  s = min(windowWidth/432, 5); // Eyeballed
+  s = min(windowWidth/420, 5); // Eyeballed (praise the lord :praying-hands-emoji:)
 
   tableOuterStrokeWidth = s;
   tableInnerStrokeWidth = s;
@@ -108,7 +108,7 @@ function setup() {
   inputField.style.overflow = 'hidden';
   inputField.style.fontFamily = 'monospace';
   inputField.style.zindex = 10;
-  inputField.placeholder = 'LDR R1, [R0]\n' +
+  inputField.placeholder = 'MOV R1, [R0]\n' +
     'MOV R3, 0x0042\n' +
     'MUL R5, R1, R2\n' +
     'ADD R3, R1, R5\n' +
@@ -144,8 +144,8 @@ function setup() {
 
   resetButtonPos = {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop};
   enqueueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 1.2*rowHeight};
-  issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 3.7*rowHeight};
-  executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight};
+  issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight}; // 3.7*rowHeight};
+  // executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight};
 }
   
 function draw() {
@@ -155,7 +155,7 @@ function draw() {
   drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET');
   drawButton(enqueueButtonPos.x, enqueueButtonPos.y, 'ENQUEUE');
   drawButton(issueButtonPos.x, issueButtonPos.y, 'ISSUE', false);
-  drawButton(executeButtonPos.x, executeButtonPos.y, 'EXECUTE', false);
+  // drawButton(executeButtonPos.x, executeButtonPos.y, 'EXECUTE', false);
   drawInstructionUnit();
   drawCDB();
   drawTable(rat);
@@ -177,8 +177,10 @@ function drawButton(x, y, label, connectLeft = true) {
     stroke(buttonHighlightColor);
     cursor('pointer');
   }
+  if (label === 'EXECUTE') {stroke(50);}
   rect(x, y, buttonWidth, rowHeight);
   setConfigLabels(labelTextSize, 'center');
+  if (label === 'EXECUTE') {fill(50);}
   text(label, x + buttonWidth/2, y + rowHeight/2+0.5*s);
 }
 
@@ -203,6 +205,13 @@ function drawTitleCard() {
   text('T0M0SUL0-16', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + 3*s);
   textSize(versionTextSize);
   text("v0.0.0.0.1 - Cannot be trusted", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + 3*s);
+  textSize(versionTextSize*0.78);
+  const yOffset = 24*s;
+  text("Features:", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset);
+  text("- Read-only Memory (REAL safety for REAL programmers)", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 5*s);
+  text("- 16 whole 16-bit Registers", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 9*s);
+  text("- Supports ADD, SUB, MUL, AND, OR, MOV, LDR (kind of)", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 13*s);
+  text("- Reading from Memory auto-generates LDR instructions", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 17*s);
 }
 
 function drawCDB() {
@@ -215,6 +224,10 @@ function drawCDB() {
   text('Common Data Bus', (inst.pos.x + inst.width/2) + ((reg.pos.x + reg.width/2)-(inst.pos.x + inst.width/2))/2, cdbY + labelTextSize);
 }
 
+function deepCopy(obj) {
+  return JSON.parse(JSON.stringify(obj)); // Deep Copy
+}
+
 function drawTable(table, tag = false, init = false) {
   for (let i = 0; i < table.rows; i++) {
     setConfigTableRows(tableOuterStrokeWidth);
@@ -225,13 +238,13 @@ function drawTable(table, tag = false, init = false) {
       rsTag = nextChar();
     }
     if (init) {
-      table.values.push({...table.initValue}); // Shallow copy
+      table.values.push(deepCopy(table.initValue));
     }
     if (table.rowLabels.length > i) {
       text(table.rowLabels[i], table.pos.x+rowLabelTextShift, table.pos.y+(i+0.5)*rowHeight + 0.5*s);
     }
   }
-  
+
   strokeWeight(tableInnerStrokeWidth);
   stroke(tableStrokeColor, 255*tableInnerStrokeOpacity);
   for (let x of table.divs) {
@@ -261,7 +274,7 @@ function drawTable(table, tag = false, init = false) {
     strokeWeight(tableInnerStrokeWidth);
     stroke(tableStrokeColor, 255*tableInnerStrokeOpacity);
     line(table.pos.x+table.width/2-(25-8.75)*s+10*s, table.pos.y+(table.rows+1)*rowHeight, table.pos.x+table.width/2-(25-8.75)*s+10*s, table.pos.y+(table.rows+2)*rowHeight);
-    setConfigLabels(labelTextSize, 'center');
+    setConfigLabels(labelTextSize*0.9, 'center');
     text(table.outputLabel, table.pos.x+table.width/2, table.pos.y+(table.rows+0.5)*rowHeight);
   }
 
@@ -306,14 +319,15 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
       rows: numInstructions-2,
-      width: 105*s,
-      divs: [20*s, 30*s, 52.5*s, 62.5*s, 72.5*s, 95*s],
+      width: 100.5*s,
+      divs: [15.5*s, 25.5*s, 48*s, 58*s, 68*s, 90.5*s],
       columnLabels: ['Code', 'Tag', 'Op.1', 'V', 'Tag', 'Op.2', 'V'],
       rowLabels: [],
-      initValue: {opcode: '', operands: [{tag: '~', value: 0, v: 0}, {tag: '~', value: 0, v: 0}]},
+      initValue: {opcode: '', operands: [{tag: '', value: 0, v: 0}, {tag: '', value: 0, v: 0}]},
       values: [],
+      free: Array(numInstructions-2).fill(true),
       outputValue: {tag: '', value: 0},
-      outputLabel: 'ALU' // 'Arithmetic-Logic Unit'
+      outputLabel: 'Arithmetic-Logic' // 'Arithmetic-Logic Unit'
     }, true, true
   );
   
@@ -321,14 +335,15 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft + 2*tableSeparation + inst.width + rsALU.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
       rows: numInstructions-2,
-      width: 62.5*s,
-      divs: [20*s, 30*s, 52.5*s],
+      width: 58*s,
+      divs: [15.5*s, 25.5*s, 48*s],
       columnLabels: ['Code', 'Tag', 'Op.1', 'V'],
       rowLabels: [],
-      initValue: {opcode: '', operands: [{tag: '~', value: 0, v: 0}]},
+      initValue: {opcode: '', operands: [{tag: '', value: 0, v: 0}]},
       values: [],
+      free: Array(numInstructions-2).fill(true),
       outputValue: {tag: '', value: 0},
-      outputLabel: 'LSU' // 'Load-Store Unit'
+      outputLabel: 'Load' // 'Load-Store Unit'
     }, true, true
   );
 
@@ -340,7 +355,7 @@ function initTables() {
       divs: [10*s, 32.5*s],
       columnLabels: ['Tag', 'Value', 'V'],
       rowLabels: registerLabels,
-      initValue: {tag: '~', value: 0, v: 0},
+      initValue: {tag: '', value: 0, v: 0},
       values: [],
       outputValue: {},
       outputLabel: ''
@@ -399,12 +414,184 @@ function enqueue() {
   }
 
   if (enqueued !== 0) {
-    window.history.replaceState(null, '', '?instructions=' + inst.values.filter(value => value.instruction !== '').map(value => value.instruction).join('|'));
+    let registerValues = '';
+    for (let i = 0; i < numRegisters; i++) {
+      if (reg.values[i].value !== 0) {
+        if (registerValues === '') {
+          registerValues += '?R'+i+'='+int2hex(reg.values[i].value);
+        } else {
+          registerValues += '&R'+i+'='+int2hex(reg.values[i].value);
+        }
+      }
+    }
+    let instructions = '?instructions=';
+    if (registerValues !== '') {
+      instructions = '&instructions=';
+    }
+    instructions += inst.values.filter(value => value.instruction !== '').map(value => value.instruction).join('|');
+    window.history.replaceState(null, '', registerValues + instructions);
   }
 }
 
 function issue() {
-  console.log('TODO');
+  let instruction = inst.values[0].instruction;
+  if (instruction !== inst.initValue.instruction) {
+    let tokens = instruction.split(', ');
+    tokens = tokens[0].split(' ').concat(tokens.slice(1));
+  
+    // Check that issuing is possible TODO
+    const freeALUentries = rsALU.free.filter(e => e === true).length;
+    const freeLSUentries = rsLSU.free.filter(e => e === true).length;
+    const requiredALUentries = supportedInstructionsMap[tokens[0]].rs === 'ALU' ? 1 : 0;
+    const requiredLSUentries = tokens.slice(2).filter(e => e[0] === '[').length;
+    if (freeALUentries >= requiredALUentries && freeLSUentries >= requiredLSUentries) {
+      // Parse instruction
+      if (supportedInstructionsMap[tokens[0]].rs === 'LSU') { // tokens[0] === 'MOV'
+        issueMov(tokens); // MOV is treated as a special case
+      } else {
+        // Parse operands & destination
+        let tag = '';
+        let indexOfNextFreeRsEntry;
+        let indexOfNextFreeOutputRsEntry;
+        let indexOfReg;
+        for (let [i, operand] of tokens.slice(2).entries()) {
+          
+          if (i === 0) {
+            indexOfNextFreeOutputRsEntry = rsALU.free.indexOf(true);
+            rsALU.free[indexOfNextFreeOutputRsEntry] = false;
+            rsALU.values[indexOfNextFreeOutputRsEntry].opcode = tokens[0];
+          }
+
+          if (operand[0] === '[') {
+            indexOfNextFreeRsEntry = rsLSU.free.indexOf(true);
+            rsLSU.free[indexOfNextFreeRsEntry] = false;
+            if (operand[1] === '0') {
+              rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'LDR', operands: [{tag: '~', value: Number(operand.slice(1, -1), 16), v: 1}]};
+            } else {
+              indexOfReg = Number(operand.slice(2, -1));
+              initRegOp(indexOfReg);
+              rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'LDR', operands: [deepCopy(rat.values[indexOfReg])]};
+            }
+            rsALU.values[indexOfNextFreeOutputRsEntry].operands[i].tag = rsLSU.rowLabels[indexOfNextFreeRsEntry];
+          } 
+          
+          else if (operand[0] === '0') {
+            rsALU.values[indexOfNextFreeOutputRsEntry].operands[i] = {tag: '~', value: Number(operand, 16), v: 1};
+          }
+
+          else {
+            indexOfReg = Number(operand.slice(1));
+            initRegOp(indexOfReg);
+            rsALU.values[indexOfNextFreeOutputRsEntry].operands[i] = deepCopy(rat.values[indexOfReg]);
+          }
+        }
+        
+        // Update RAT and Registers
+        let outputReg = null;
+        if (tokens[1][0] === '[') {
+          outputReg = Number(tokens[1].slice(2, -1));
+          indexOfNextFreeRsEntry = rsLSU.free.indexOf(true);
+          rsLSU.free[indexOfNextFreeRsEntry] = false;
+        } else {
+          outputReg = Number(tokens[1].slice(1));
+        }
+        rat.values[outputReg].tag = rsALU.rowLabels[indexOfNextFreeOutputRsEntry];
+        rat.values[outputReg].v = 0;
+        if (tokens[1][0] === '[') {
+          rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'STR', operands: [deepCopy(rat.values[outputReg])]};
+        }
+      }
+
+      // Move instruction queue
+      for (let i = 0; i < numInstructions - 1; i++) {
+        inst.values[i].instruction = inst.values[i+1].instruction;
+      }
+      inst.values[numInstructions-1].instruction = inst.initValue.instruction;
+      instructionLoadIndex--;
+
+    } else {
+      window.alert('Not enough space in the Reservation Stations');
+    }
+  }
+}
+
+function issueMov(tokens) {
+  let indexOfRegDest;
+  let indexOfRegOp;
+  let indexOfInstruction;
+
+  // imm to...
+  if (tokens[2][0] === '0') {
+    // ...reg
+    if (tokens[1][0] === 'R') {
+      indexOfRegDest = Number(tokens[1].slice(1));
+      reg.values[indexOfRegDest].value = Number(tokens[2], 16);
+      rat.values[indexOfRegDest] = {tag: '~', value: Number(tokens[2], 16), v: 1};
+    }
+    // ...memory pointed by reg (STR) TODO
+    // else if (tokens[1].slice(0, 2) === '[R') {
+    //   indexOfRegDest = Number(tokens[1].slice(2, -1));
+    //   initRegOp(indexOfRegDest);
+    //   loadInstructionToRs(rsLSU, 'STR', [deepCopy(rat.values[indexOfRegDest])]);
+    // }
+    // ...memory pointed by imm (STR) TODO
+  } 
+
+  // reg to... 
+  else if (tokens[2][0] === 'R') {
+    indexOfRegOp = Number(tokens[2].slice(1));
+    initRegOp(indexOfRegOp);
+    // ...reg
+    if (tokens[1][0] === 'R') {
+      indexOfRegDest = Number(tokens[1].slice(1));
+      if (rat.values[indexOfRegOp].v == 1) {
+        reg.values[indexOfRegDest].value = reg.values[indexOfRegOp].value;
+      }
+      rat.values[indexOfRegDest] = deepCopy(rat.values[indexOfRegOp]);
+    }
+    // ...memory pointed by reg (STR) TODO
+    // ...memory pointed by imm (STR) TODO
+  }
+
+  // memory pointed by reg to...
+  else if (tokens[2].slice(0, 2) === '[R') {
+    indexOfRegOp = Number(tokens[2].slice(2, -1));
+    initRegOp(indexOfRegOp);
+    // ...reg (LDR)
+    if (tokens[1][0] === 'R') {
+      indexOfRegDest = Number(tokens[1].slice(1));
+      indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [deepCopy(rat.values[indexOfRegOp])]);
+      rat.values[indexOfRegDest].tag = rsLSU.rowLabels[indexOfInstruction];
+    }
+    // ...memory pointed by reg (LDR + STR) TODO
+    // ...memory pointed by imm (LDR + STR) TODO
+  }
+
+  // memory pointed by imm to...
+  else if (tokens[2].slice(0, 2) === '[0') {
+    // ...reg (LDR)
+    if (tokens[1][0] === 'R') {
+      indexOfRegDest = Number(tokens[1].slice(1));
+      indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [{tag: '~', value: Number(tokens[2].slice(1, -1)), v: 1}]);
+      rat.values[indexOfRegDest].tag = rsLSU.rowLabels[indexOfInstruction];
+    }
+    // ...memory pointed by reg (LDR + STR) TODO
+    // ...memory pointed by imm (LDR + STR) TODO
+  }
+}
+
+function initRegOp(indexOfReg) {
+  if (deepEqual(rat.values[indexOfReg], rat.initValue)) {
+    rat.values[indexOfReg] = {tag: '~', value: reg.values[indexOfReg].value, v: 1};
+  }
+}
+
+function loadInstructionToRs(rs, opcode, operands) {
+  indexOfNextFreeRsEntry = rs.free.indexOf(true);
+  rs.free[indexOfNextFreeRsEntry] = false;
+  rs.values[indexOfNextFreeRsEntry].opcode = opcode;
+  rs.values[indexOfNextFreeRsEntry].operands = operands;
+  return indexOfNextFreeRsEntry;
 }
 
 function execute() {
@@ -422,8 +609,8 @@ function mouseClicked() {
     enqueue();
   }  else if (mouseHover(issueButtonPos, buttonWidth, rowHeight)) {
     issue();
-  } else if (mouseHover(executeButtonPos, buttonWidth, rowHeight)) {
-    execute();
+  // } else if (mouseHover(executeButtonPos, buttonWidth, rowHeight)) {
+  //   execute();
   }
 }
 
@@ -449,13 +636,9 @@ function or(v1, v2) {
   return v1 | v2;
 }
 
-function mov(v1, v2) {
-  // TODO ???
-}
-
-function st(v1, v2) {
-  memory[v1] = v2;
-}
+// function st(v1, v2) {
+//   memory[v1] = v2;
+// }
 
 function ld(v1) {
   if (memory[v1] === undefined) {
@@ -493,10 +676,17 @@ function drawTextRs(rs) {
     }
     text(value.opcode, rs.pos.x + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     text(value.operands[0].tag, rs.pos.x + rs.divs[0] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    if (value.operands[0].v == 0) {
+      fill(tableTextDefaultColor);
+    }
     text(int2hex(value.operands[0].value), rs.pos.x + rs.divs[1] + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     text(value.operands[0].v, rs.pos.x + rs.divs[2] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     if (value.operands.length > 1) {
+      fill(tableTextColor);
       text(value.operands[1].tag, rs.pos.x + rs.divs[3] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+      if (value.operands[1].v == 0) {
+        fill(tableTextDefaultColor);
+      }
       text(int2hex(value.operands[1].value), rs.pos.x + rs.divs[4] + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
       text(value.operands[1].v, rs.pos.x + rs.divs[5] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     }
@@ -511,6 +701,9 @@ function drawTextRAT() {
       fill(tableTextDefaultColor);
     }
     text(value.tag, rat.pos.x + 3.5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    if (value.v == 0) {
+      fill(tableTextDefaultColor);
+    }
     text(int2hex(value.value), rat.pos.x + rat.divs[0] + 2*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
     text(value.v, rat.pos.x + rat.divs[1] + 3.5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
   }
@@ -545,7 +738,16 @@ function parseQsParams() {
   const params = new URLSearchParams(window.location.href.split('?').pop());
   let instructions = '';
   if (params.has('instructions')) {
-    instructions = params.get('instructions')
+    instructions = params.get('instructions');
+  }
+  for (let i = 0; i < numRegisters; i++) {
+    if (params.has('R'+i)) {
+      if (params.get('R'+i).slice(0, 2) === '0x' || params.get('R'+i).slice(0, 2) === '0X') {
+        reg.values[i].value = constrain(Number(params.get('R'+i), 16), 0, maxValue);
+      } else {
+        reg.values[i].value = constrain(Number(params.get('R'+i)), 0, maxValue);
+      }
+    }
   }
   return instructions.split('|').slice(0, numInstructions*2).map(line => line.slice(0, maxCharsPerInstruction));
 }
@@ -593,8 +795,9 @@ function formatInstructionDisplay(instruction) {
     let instructionSupported = supportedInstructionsMap.hasOwnProperty(tokens[0]);
     let matchingNumArgs = tokens.length - 2 === supportedInstructionsMap[tokens[0]].numArgs;
     let secondTokenIsRegister = isRegister(tokens[1]);
+    let secondTokenIsntStore = tokens[1][0] !== '['; // STR not implemented TODO
     let allArgsAreRegistersOrValues = areRegistersOrValues(tokens.slice(2));
-    if (instructionSupported && matchingNumArgs && secondTokenIsRegister && allArgsAreRegistersOrValues) {
+    if (instructionSupported && matchingNumArgs && secondTokenIsRegister && allArgsAreRegistersOrValues && secondTokenIsntStore) {
       return tokens[0] + ' ' + tokens.slice(1).map(token => formatArg(token)).join(', ');
     }
   } catch (e) {

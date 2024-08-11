@@ -108,13 +108,13 @@ function setup() {
   inputField.style.overflow = 'hidden';
   inputField.style.fontFamily = 'monospace';
   inputField.style.zindex = 10;
-  inputField.placeholder = 'MOV R1, [R0]\n' +
-    'LDR R3, 0x0042\n' +
+  inputField.placeholder = 'LDR R1, [R0]\n' +
+    'MOV R3, 0x0042\n' +
     'MUL R5, R1, R2\n' +
     'ADD R3, R1, R5\n' +
     'SUB R3, [R3], R5\n' +
     'AND R6, R3, R5\n' +
-    'OR R7, R6, R3\n' +
+    'MOV R7, R6\n' +
     'MUL R3, R7, 0xFAFA';
   inputField.style.backgroundColor = 'transparent'; // `rgb(${tableBgColor},${tableBgColor},${tableBgColor})`;
   inputField.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;

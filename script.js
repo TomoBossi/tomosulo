@@ -486,7 +486,7 @@ function issue() {
           }
         }
         
-        // Update RAT and Registers
+        // Update RAT
         let outputReg = null;
         if (tokens[1][0] === '[') {
           outputReg = Number(tokens[1].slice(2, -1));

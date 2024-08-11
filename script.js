@@ -109,7 +109,7 @@ function setup() {
   inputField.style.fontFamily = 'monospace';
   inputField.style.zindex = 10;
   inputField.placeholder = 'MOV R1, [R0]\n' +
-    'MOV R3, 0x0042\n' +
+    'LDR R3, 0x0042\n' +
     'MUL R5, R1, R2\n' +
     'ADD R3, R1, R5\n' +
     'SUB R3, [R3], R5\n' +

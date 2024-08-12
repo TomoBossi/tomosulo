@@ -132,6 +132,7 @@ function setup() {
   inputField.style.outline = 'none';
   inputField.style.padding = 0.1*s;
   inputField.style.fontSize = `${5*s}px`;
+  inputField.style.lineHeight = `${6.9*s}px`;
 
   inputField.addEventListener('input', 
     () => {

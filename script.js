@@ -73,7 +73,7 @@ let switchSize;
 
 function setup() {
   textFont('Courier New');
-  smooth();
+  // smooth();
   
   s = windowWidth/428; // Eyeballed (praise the lord :praying-hands-emoji:)
 
@@ -339,7 +339,6 @@ function drawTable(table, tag = false, init = false) {
       table.values.push(deepCopy(table.initValue));
     }
     if (i < table.rowLabels.length) {
-      highlightProportion = lerp(table.highlight[i], 0, 0.01);
       highlightColor = tableLabelColor + (darkMode ? 255-tableLabelColor : -tableLabelColor)*table.highlight[i];
       fill(highlightColor);
       text(table.rowLabels[i], table.pos.x+rowLabelTextShift, table.pos.y+(i+0.5)*rowHeight + 0.5*s);
@@ -380,9 +379,9 @@ function drawTable(table, tag = false, init = false) {
   }
 
   for (let i = 0; i < table.rows; i++) {
-    highlightProportion = lerp(table.highlight[i], 0, 0.01);
+    highlightProportion = lerp(table.highlight[i], 0, 0.025);
     newHighlightColor = tableLabelColor + (darkMode ? 255-tableLabelColor : -tableLabelColor)*table.highlight[i];
-    setConfigTableRows(0.65*tableOuterStrokeWidth+1.6*tableOuterStrokeWidth*highlightProportion);
+    setConfigTableRows(0.65*tableOuterStrokeWidth+2*tableOuterStrokeWidth*highlightProportion);
     stroke(newHighlightColor);
     noFill();
     if (table.highlight[i] > 0.01 && (i == 0 || (i > 0 && darkMode ? newHighlightColor >= highlightColor : newHighlightColor <= highlightColor))) {

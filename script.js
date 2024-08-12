@@ -228,10 +228,10 @@ function updateColors() {
   bgColor = darkMode ? 0 : 255;
   document.body.style.backgroundColor = `rgb(${bgColor},${bgColor},${bgColor})`;
   tableBgColor = darkMode ? 15 : 240;
-  tableLabelColor = darkMode ? 100 : 70;
-  tableStrokeColor = darkMode ? 100 : 100;
+  tableLabelColor = darkMode ? 100 : 130;
+  tableStrokeColor = darkMode ? 100 : 120;
   cdbStrokeColor = darkMode ? 100 : 100;
-  titleColor = darkMode ? 130 : 60;
+  titleColor = darkMode ? 130 : 80;
   document.getElementById('textArea').style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   document.getElementById('logs').style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   document.getElementById('logsTitle').style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
@@ -324,6 +324,9 @@ function deepCopy(obj) {
 }
 
 function drawTable(table, tag = false, init = false) {
+  let highlightProportion;
+  let highlightColor;
+  let newHighlightColor;
   for (let i = 0; i < table.rows; i++) {
     setConfigTableRows(tableOuterStrokeWidth);
     rect(table.pos.x, table.pos.y+i*rowHeight, table.width, rowHeight);
@@ -335,7 +338,10 @@ function drawTable(table, tag = false, init = false) {
     if (init) {
       table.values.push(deepCopy(table.initValue));
     }
-    if (table.rowLabels.length > i) {
+    if (i < table.rowLabels.length) {
+      highlightProportion = lerp(table.highlight[i], 0, 0.01);
+      highlightColor = tableLabelColor + (darkMode ? 255-tableLabelColor : -tableLabelColor)*table.highlight[i];
+      fill(highlightColor);
       text(table.rowLabels[i], table.pos.x+rowLabelTextShift, table.pos.y+(i+0.5)*rowHeight + 0.5*s);
     }
   }
@@ -345,7 +351,7 @@ function drawTable(table, tag = false, init = false) {
   for (let x of table.divs) {
     line(table.pos.x+x, table.pos.y, table.pos.x+x, table.pos.y+rowHeight*table.rows);
   }
-  
+
   setConfigLabels(labelTextSize, 'center');
   for (let [i, label] of table.columnLabels.entries()) {
     if (i == 0) {
@@ -356,7 +362,7 @@ function drawTable(table, tag = false, init = false) {
       text(label, table.pos.x+table.divs[i-1]+(table.divs[i]-table.divs[i-1])/2, table.pos.y-rowHeight/2);
     }
   }
-  
+
   if (!(Object.entries(table.outputValue).length === 0)) {
     setConfigTableRows(tableOuterStrokeWidth);
     quad(
@@ -371,6 +377,19 @@ function drawTable(table, tag = false, init = false) {
     line(table.pos.x+table.width/2-(25-8.75)*s+10*s, table.pos.y+(table.rows+1)*rowHeight, table.pos.x+table.width/2-(25-8.75)*s+10*s, table.pos.y+(table.rows+2)*rowHeight);
     setConfigLabels(labelTextSize*0.9, 'center');
     text(table.outputLabel, table.pos.x+table.width/2, table.pos.y+(table.rows+0.5)*rowHeight);
+  }
+
+  setConfigTableRows(tableOuterStrokeWidth*0.65);
+  noFill();
+  for (let i = 0; i < table.rows; i++) {
+    highlightProportion = lerp(table.highlight[i], 0, 0.01);
+    newHighlightColor = tableLabelColor + (darkMode ? 255-tableLabelColor : -tableLabelColor)*table.highlight[i];
+    stroke(newHighlightColor);
+    if (table.highlight[i] > 0.03 && (i == 0 || (i > 0 && darkMode ? newHighlightColor >= highlightColor : newHighlightColor <= highlightColor))) {
+      rect(table.pos.x, table.pos.y+i*rowHeight, table.width, rowHeight);
+    }
+    table.highlight[i] = highlightProportion;
+    highlightColor = newHighlightColor;
   }
 
   return table;
@@ -405,6 +424,7 @@ function initTables() {
       rowLabels: instructionLabels,
       initValue: {instruction: ''},
       values: [],
+      highlight: Array(numInstructions).fill(0),
       outputValue: {},
       outputLabel: ''
     }, false, true
@@ -421,6 +441,7 @@ function initTables() {
       initValue: {opcode: '', operands: [{tag: '', value: 0, v: 0}, {tag: '', value: 0, v: 0}]},
       values: [],
       free: Array(numInstructions-2).fill(true),
+      highlight: Array(numInstructions-2).fill(0),
       outputValue: {tag: '', value: 0},
       outputLabel: 'Arithmetic-Logic' // 'Arithmetic-Logic Unit'
     }, true, true
@@ -437,6 +458,7 @@ function initTables() {
       initValue: {opcode: '', operands: [{tag: '', value: 0, v: 0}]},
       values: [],
       free: Array(numInstructions-2).fill(true),
+      highlight: Array(numInstructions-2).fill(0),
       outputValue: {tag: '', value: 0},
       outputLabel: 'Load' // 'Load-Store Unit'
     }, true, true
@@ -452,6 +474,7 @@ function initTables() {
       rowLabels: registerLabels,
       initValue: {tag: '', value: 0, v: 0},
       values: [],
+      highlight: Array(numRegisters).fill(0),
       outputValue: {},
       outputLabel: ''
     }, false, true
@@ -467,6 +490,7 @@ function initTables() {
       rowLabels: registerLabels,
       initValue: {value: 0},
       values: [],
+      highlight: Array(numRegisters).fill(0),
       outputValue: {},
       outputLabel: ''
     }, false, true
@@ -558,6 +582,7 @@ function issue() {
             indexOfNextFreeOutputRsEntry = rsALU.free.indexOf(true);
             rsALU.free[indexOfNextFreeOutputRsEntry] = false;
             rsALU.values[indexOfNextFreeOutputRsEntry].opcode = tokens[0];
+            rsALU.highlight[indexOfNextFreeOutputRsEntry] = 1;
           }
 
           if (operand[0] === '[') {
@@ -565,22 +590,27 @@ function issue() {
             rsLSU.free[indexOfNextFreeRsEntry] = false;
             if (operand[1] === '0') {
               rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'LDR', operands: [{tag: '~', value: Number(operand.slice(1, -1), 16), v: 1}]};
+              rsLSU.highlight[indexOfNextFreeRsEntry] = 1;
             } else {
               indexOfReg = Number(operand.slice(2, -1));
               initRegOp(indexOfReg);
               rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'LDR', operands: [deepCopy(rat.values[indexOfReg])]};
+              rsLSU.highlight[indexOfNextFreeRsEntry] = 1;
             }
             rsALU.values[indexOfNextFreeOutputRsEntry].operands[i].tag = rsLSU.rowLabels[indexOfNextFreeRsEntry];
+            rsALU.highlight[indexOfNextFreeOutputRsEntry] = 1;
           } 
           
           else if (operand[0] === '0') {
             rsALU.values[indexOfNextFreeOutputRsEntry].operands[i] = {tag: '~', value: Number(operand, 16), v: 1};
+            rsALU.highlight[indexOfNextFreeOutputRsEntry] = 1;
           }
 
           else {
             indexOfReg = Number(operand.slice(1));
             initRegOp(indexOfReg);
             rsALU.values[indexOfNextFreeOutputRsEntry].operands[i] = deepCopy(rat.values[indexOfReg]);
+            rsALU.highlight[indexOfNextFreeOutputRsEntry] = 1;
           }
         }
         
@@ -595,8 +625,10 @@ function issue() {
         }
         rat.values[outputReg].tag = rsALU.rowLabels[indexOfNextFreeOutputRsEntry];
         rat.values[outputReg].v = 0;
+        rat.highlight[outputReg] = 1;
         if (tokens[1][0] === '[') {
           rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'STR', operands: [deepCopy(rat.values[outputReg])]};
+          rsLSU.highlight[indexOfNextFreeRsEntry] = 1;
         }
       }
 
@@ -627,7 +659,9 @@ function issueMov(tokens) {
     if (tokens[1][0] === 'R') {
       indexOfRegDest = Number(tokens[1].slice(1));
       reg.values[indexOfRegDest].value = Number(tokens[2], 16);
+      reg.highlight[indexOfRegDest] = 1;
       rat.values[indexOfRegDest] = {tag: '~', value: Number(tokens[2], 16), v: 1};
+      rat.highlight[indexOfRegDest] = 1;
     }
     // ...memory pointed by reg (STR) TODO
     // else if (tokens[1].slice(0, 2) === '[R') {
@@ -647,8 +681,10 @@ function issueMov(tokens) {
       indexOfRegDest = Number(tokens[1].slice(1));
       if (rat.values[indexOfRegOp].v == 1) {
         reg.values[indexOfRegDest].value = reg.values[indexOfRegOp].value;
+        reg.highlight[indexOfRegDest] = 1;
       }
       rat.values[indexOfRegDest] = deepCopy(rat.values[indexOfRegOp]);
+      rat.highlight[indexOfRegDest] = 1;
     }
     // ...memory pointed by reg (STR) TODO
     // ...memory pointed by imm (STR) TODO
@@ -663,6 +699,7 @@ function issueMov(tokens) {
       indexOfRegDest = Number(tokens[1].slice(1));
       indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [deepCopy(rat.values[indexOfRegOp])]);
       rat.values[indexOfRegDest].tag = rsLSU.rowLabels[indexOfInstruction];
+      rat.highlight[indexOfRegDest] = 1;
     }
     // ...memory pointed by reg (LDR + STR) TODO
     // ...memory pointed by imm (LDR + STR) TODO
@@ -675,6 +712,7 @@ function issueMov(tokens) {
       indexOfRegDest = Number(tokens[1].slice(1));
       indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [{tag: '~', value: Number(tokens[2].slice(1, -1)), v: 1}]);
       rat.values[indexOfRegDest].tag = rsLSU.rowLabels[indexOfInstruction];
+      rat.highlight[indexOfRegDest] = 1;
     }
     // ...memory pointed by reg (LDR + STR) TODO
     // ...memory pointed by imm (LDR + STR) TODO
@@ -684,6 +722,7 @@ function issueMov(tokens) {
 function initRegOp(indexOfReg) {
   if (deepEqual(rat.values[indexOfReg], rat.initValue)) {
     rat.values[indexOfReg] = {tag: '~', value: reg.values[indexOfReg].value, v: 1};
+    rat.highlight[indexOfReg] = 1;
   }
 }
 
@@ -692,6 +731,7 @@ function loadInstructionToRs(rs, opcode, operands) {
   rs.free[indexOfNextFreeRsEntry] = false;
   rs.values[indexOfNextFreeRsEntry].opcode = opcode;
   rs.values[indexOfNextFreeRsEntry].operands = operands;
+  rs.highlight[indexOfNextFreeRsEntry] = 1;
   return indexOfNextFreeRsEntry;
 }
 

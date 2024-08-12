@@ -205,7 +205,7 @@ function drawToggleButton() {
       push();
       translate(switchPos, switchPos);
       rotate(i*PI/4);
-      stroke(hover ? 255-bgColor : titleColor);
+      stroke(hover ? 255-bgColor : tableTextDefaultColor);
       strokeWeight(0.9*s);
       line(-switchSize/4, 0, switchSize/4, 0);
       pop();
@@ -213,7 +213,7 @@ function drawToggleButton() {
     fill(bgColor);
     ellipse(switchPos, switchPos, switchSize/2.3);
   } 
-  fill(hover ? 255-bgColor : titleColor);
+  fill(hover ? 255-bgColor : tableTextDefaultColor);
   noStroke();
   ellipse(switchPos, switchPos, switchSize/3);
   fill(bgColor);

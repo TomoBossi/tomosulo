@@ -29,6 +29,7 @@ let s;
 
 let tableOuterStrokeWidth;
 let tableInnerStrokeWidth;
+let buttonWidth;
 let rowHeight;
 let labelTextSize;
 let rowLabelTextShift;
@@ -42,7 +43,8 @@ let registerLabels;
 let instructionLabels;
 
 let inputField;
-let buttonWidth;
+let logsText;
+let logsTitle;
 
 let rsTag = 'A'; // Starter tag
 
@@ -55,8 +57,10 @@ let rsALU;
 let memory = [];
 
 let instructionLoadIndex = 0;
-const maxCharsPerInstruction = 'INST [RXX], [0xXXXX], [0xXXXX]'.length;
+const maxCharsPerInstruction = 'INS [0xXXXX], [0xXXXX], [0xXXXX]'.length;
 let qsInstructionInput;
+let lastIssued = '';
+let logs = '';
 
 let resetButtonPos = {x: 0, y: 0};
 let enqueueButtonPos = {x: 0, y: 0};
@@ -67,7 +71,7 @@ function setup() {
   textFont('Courier New');
   smooth();
   
-  s = min(windowWidth/420, 5); // Eyeballed (praise the lord :praying-hands-emoji:)
+  s = windowWidth/428; // Eyeballed (praise the lord :praying-hands-emoji:)
 
   tableOuterStrokeWidth = s;
   tableInnerStrokeWidth = s;
@@ -83,7 +87,7 @@ function setup() {
   versionTextSize = 4.55*s;
   buttonWidth = 40*s;
 
-  createCanvas(windowWidth, 3*tablePaddingTop + numRegisters*rowHeight);
+  createCanvas(windowWidth*0.975, 3*tablePaddingTop + numRegisters*rowHeight);
   
   registerLabels = [];
   for (let i = 0; i < numRegisters; i++) {
@@ -146,16 +150,28 @@ function setup() {
   enqueueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 1.2*rowHeight};
   issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight}; // 3.7*rowHeight};
   // executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight};
+
+  logsTitle = document.getElementById('logsTitle');
+  logsText = document.getElementById('logs');
+  logsTitle.style.fontFamily = 'monospace';
+  logsTitle.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
+  logsTitle.style.position = 'absolute';
+  logsTitle.style.top = `${height-20*s}px`;
+  logsTitle.style.left = `${tablePaddingLeft}px`;
+  logsText.style.fontFamily = 'monospace';
+  logsText.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
+  logsText.style.position = 'absolute';
+  logsText.style.top = `${height-13*s}px`;
+  logsText.style.left = `${tablePaddingLeft-0.5*s}px`;
 }
   
 function draw() {
   cursor('');
   background(bgColor);
-  drawTitleCard();
-  drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET');
-  drawButton(enqueueButtonPos.x, enqueueButtonPos.y, 'ENQUEUE');
-  drawButton(issueButtonPos.x, issueButtonPos.y, 'ISSUE', false);
-  // drawButton(executeButtonPos.x, executeButtonPos.y, 'EXECUTE', false);
+  drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET', true, false);
+  drawButton(enqueueButtonPos.x, enqueueButtonPos.y, 'ENQUEUE', true, false);
+  drawButton(issueButtonPos.x, issueButtonPos.y, 'ISSUE', false, true);
+  // drawButton(executeButtonPos.x, executeButtonPos.y, 'EXECUTE', false, false);
   drawInstructionUnit();
   drawCDB();
   drawTable(rat);
@@ -164,13 +180,24 @@ function draw() {
   drawTable(rsALU);
   drawTable(rsLSU);
   drawText();
+  drawTitleCard();
+  drawLastIssued();
 }
 
-function drawButton(x, y, label, connectLeft = true) {
-  if (connectLeft) {
+function updateLogs(log) {
+  logs += log + '\n';
+  document.getElementById('logs').innerHTML = logs;
+}
+
+function drawButton(x, y, label, connectLeft = true, connectRight = true) {
+  if (connectLeft || connectRight) {
     setConfigTableRows(tableInnerStrokeWidth);
     stroke(tableStrokeColor, 255*tableInnerStrokeOpacity);
-    line(x - tableSeparation, y + rowHeight/2, x, y + rowHeight/2);
+    if (connectLeft) {
+      line(x - tableSeparation, y + rowHeight/2, x, y + rowHeight/2);
+    } if (connectRight) {
+      line(x + buttonWidth, y + rowHeight/2, x + buttonWidth + tableSeparation, y + rowHeight/2);
+    }
   }
   setConfigTableRows(tableOuterStrokeWidth);
   if (label !== 'EXECUTE' && mouseX > x && mouseX < x+buttonWidth && mouseY > y && mouseY < y + rowHeight) {
@@ -196,7 +223,7 @@ function drawTitleCard() {
   strokeWeight(tableInnerStrokeWidth);
   stroke(tableStrokeColor, 255*tableInnerStrokeOpacity);
   fill(bgColor);
-  rect(rsALU.pos.x + buttonWidth + tableSeparation, tablePaddingTop, rsALU.width + rsLSU.width - buttonWidth, 59*s)
+  rect(rsALU.pos.x + buttonWidth + tableSeparation, tablePaddingTop, rsALU.width + rsLSU.width - buttonWidth, 47*s);
   strokeWeight(0);
   textStyle('bold');
   fill(titleColor);
@@ -204,14 +231,25 @@ function drawTitleCard() {
   textAlign('left', 'top');
   text('T0M0SUL0-16', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + 3*s);
   textSize(versionTextSize);
-  text("v0.0.0.0.1 - Cannot be trusted", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + 3*s);
+  text('v0.0.0.0.1 - Cannot be trusted', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + 3*s);
   textSize(versionTextSize*0.78);
-  const yOffset = 24*s;
-  text("Features:", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset);
-  text("- Read-only Memory (REAL safety for REAL programmers)", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 5*s);
-  text("- 16 whole 16-bit Registers", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 9*s);
-  text("- Supports ADD, SUB, MUL, AND, OR, MOV, LDR (kind of)", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 13*s);
-  text("- Reading from Memory auto-generates LDR instructions", rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 17*s);
+  const yOffset = 12*s;
+  text('Features:', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset);
+  text('- Read-only Memory (REAL safety for REAL programmers)', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 5*s);
+  text('- 16 whole 16-bit Registers', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 9*s);
+  text('- Supports ADD, SUB, MUL, AND, OR, MOV, LDR (kind of)', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 13*s);
+  text('- Reading from Memory auto-generates LDR instructions', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 17*s);
+}
+
+function drawLastIssued() {
+  setConfigTableRows(tableOuterStrokeWidth);
+  stroke(tableStrokeColor*0.35);
+  rect(issueButtonPos.x + buttonWidth + tableSeparation, issueButtonPos.y, rsALU.width + rsLSU.width - buttonWidth, rowHeight);
+  line(issueButtonPos.x + buttonWidth + tableSeparation + 16*s, issueButtonPos.y, issueButtonPos.x + buttonWidth + tableSeparation + 16*s, issueButtonPos.y + rowHeight);
+  setConfigLabels(labelTextSize, 'left');
+  text('LAST', issueButtonPos.x + buttonWidth + tableSeparation + 2*s, issueButtonPos.y + rowHeight/2 + 0.5*s);
+  fill(titleColor);
+  text(lastIssued, issueButtonPos.x + buttonWidth + tableSeparation + 18*s, issueButtonPos.y + rowHeight/2 + 0.5*s);
 }
 
 function drawCDB() {
@@ -304,8 +342,8 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
       rows: numInstructions,
-      width: 94*s,
-      divs: [94*s],
+      width: 100*s,
+      divs: [100*s],
       columnLabels: ['Instruction Queue'],
       rowLabels: instructionLabels,
       initValue: {instruction: ''},
@@ -382,6 +420,8 @@ function reset() {
   rsTag = 'A';
   initTables();
   instructionLoadIndex = 0;
+  lastIssued = '';
+  updateLogs('[RESET] ...');
   // inputField.value = '';
   // window.history.replaceState(null, '', '/');
 }
@@ -430,6 +470,7 @@ function enqueue() {
     }
     instructions += inst.values.filter(value => value.instruction !== '').map(value => value.instruction).join('|');
     window.history.replaceState(null, '', registerValues + instructions);
+    updateLogs('[QUEUE] ...');
   }
 }
 
@@ -443,7 +484,7 @@ function issue() {
     const freeALUentries = rsALU.free.filter(e => e === true).length;
     const freeLSUentries = rsLSU.free.filter(e => e === true).length;
     const requiredALUentries = supportedInstructionsMap[tokens[0]].rs === 'ALU' ? 1 : 0;
-    const requiredLSUentries = tokens.slice(2).filter(e => e[0] === '[').length;
+    const requiredLSUentries = tokens.slice(1).filter(e => e[0] === '[').length;
     if (freeALUentries >= requiredALUentries && freeLSUentries >= requiredLSUentries) {
       // Parse instruction
       if (supportedInstructionsMap[tokens[0]].rs === 'LSU') { // tokens[0] === 'MOV'
@@ -509,6 +550,9 @@ function issue() {
       inst.values[numInstructions-1].instruction = inst.initValue.instruction;
       instructionLoadIndex--;
 
+      // Update logs
+      lastIssued = instruction;
+      updateLogs('[ISSUE] ' + instruction);
     } else {
       window.alert('Not enough space in the Reservation Stations');
     }
@@ -636,16 +680,16 @@ function or(v1, v2) {
   return v1 | v2;
 }
 
-// function st(v1, v2) {
-//   memory[v1] = v2;
-// }
-
 function ld(v1) {
   if (memory[v1] === undefined) {
     memory[v1] = floor(random(0, maxValue/8));
   }
   return memory[v1];
 }
+
+// function st(v1, v2) {
+//   memory[v1] = v2;
+// }
 
 // Write data
 
@@ -800,8 +844,6 @@ function formatInstructionDisplay(instruction) {
     if (instructionSupported && matchingNumArgs && secondTokenIsRegister && allArgsAreRegistersOrValues && secondTokenIsntStore) {
       return tokens[0] + ' ' + tokens.slice(1).map(token => formatArg(token)).join(', ');
     }
-  } catch (e) {
-    console.error(e);
-  }
+  } catch (e) {}
   return '';
 }

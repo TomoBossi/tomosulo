@@ -1,7 +1,13 @@
 html, body {
+  height: 10000;
   margin: 0;
   padding: 0;
 }
+
 canvas {
   display: block;
+  position: absolute;
+  height: auto;
+  inset: 0;
+  z-index: -1;
 }

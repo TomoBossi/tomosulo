@@ -163,13 +163,15 @@ function setup() {
   logsTitle.style.fontFamily = 'monospace';
   logsTitle.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   logsTitle.style.position = 'absolute';
-  logsTitle.style.top = `${height-20*s}px`;
+  logsTitle.style.top = `${height-21.75*s}px`;
   logsTitle.style.left = `${tablePaddingLeft}px`;
+  logsTitle.style.fontSize = `${4.5*s}px`;
   logsText.style.fontFamily = 'monospace';
   logsText.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   logsText.style.position = 'absolute';
   logsText.style.top = `${height-12*s}px`;
   logsText.style.left = `${tablePaddingLeft-0.5*s}px`;
+  logsText.style.fontSize = `${3.5*s}px`;
 }
   
 function draw() {

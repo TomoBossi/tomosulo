@@ -379,13 +379,13 @@ function drawTable(table, tag = false, init = false) {
     text(table.outputLabel, table.pos.x+table.width/2, table.pos.y+(table.rows+0.5)*rowHeight);
   }
 
-  setConfigTableRows(tableOuterStrokeWidth*0.65);
-  noFill();
   for (let i = 0; i < table.rows; i++) {
     highlightProportion = lerp(table.highlight[i], 0, 0.01);
     newHighlightColor = tableLabelColor + (darkMode ? 255-tableLabelColor : -tableLabelColor)*table.highlight[i];
+    setConfigTableRows(0.65*tableOuterStrokeWidth+1.6*tableOuterStrokeWidth*highlightProportion);
     stroke(newHighlightColor);
-    if (table.highlight[i] > 0.03 && (i == 0 || (i > 0 && darkMode ? newHighlightColor >= highlightColor : newHighlightColor <= highlightColor))) {
+    noFill();
+    if (table.highlight[i] > 0.01 && (i == 0 || (i > 0 && darkMode ? newHighlightColor >= highlightColor : newHighlightColor <= highlightColor))) {
       rect(table.pos.x, table.pos.y+i*rowHeight, table.width, rowHeight);
     }
     table.highlight[i] = highlightProportion;

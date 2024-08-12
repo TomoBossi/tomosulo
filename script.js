@@ -73,7 +73,7 @@ let switchSize;
 
 function setup() {
   textFont('Courier New');
-  // smooth();
+  smooth();
   
   s = windowWidth/428; // Eyeballed (praise the lord :praying-hands-emoji:)
 

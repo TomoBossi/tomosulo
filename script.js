@@ -234,7 +234,7 @@ function updateColors() {
   document.getElementById('logs').style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   document.getElementById('logsTitle').style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   tableTextColor = darkMode ? 150 : 50;
-  tableTextDefaultColor = darkMode ? 50 : 160;
+  tableTextDefaultColor = darkMode ? 50 : 200;
   buttonHighlightColor = darkMode ? 200 : 200;
   secondaryStrokeColor = darkMode ? 35 : 200;
 }

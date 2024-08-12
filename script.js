@@ -15,15 +15,17 @@ const supportedInstructionsMap = {
   // STR: {fn: st, numArgs: 1},
 };
 
-const bgColor = 0;
-const tableBgColor = 15;
-const tableLabelColor = 100;
-const tableStrokeColor = 100;
-const cdbStrokeColor = 100;
-const titleColor = 130;
-const tableTextColor = 150;
-const tableTextDefaultColor = 50;
-const buttonHighlightColor = 200;
+let darkMode = true;
+let bgColor = 0;
+let tableBgColor = 15;
+let tableLabelColor = 100;
+let tableStrokeColor = 100;
+let cdbStrokeColor = 100;
+let titleColor = 130;
+let tableTextColor = 150;
+let tableTextDefaultColor = 50;
+let buttonHighlightColor = 200;
+let secondaryStrokeColor = 35;
 
 let s;
 
@@ -66,6 +68,8 @@ let resetButtonPos = {x: 0, y: 0};
 let enqueueButtonPos = {x: 0, y: 0};
 let issueButtonPos = {x: 0, y: 0};
 let executeButtonPos = {x: 0, y: 0};
+let switchPos;
+let switchSize;
 
 function setup() {
   textFont('Courier New');
@@ -151,6 +155,9 @@ function setup() {
   issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight}; // 3.7*rowHeight};
   // executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight};
 
+  switchPos = 6.5*s;
+  switchSize = 12*s;
+
   logsTitle = document.getElementById('logsTitle');
   logsText = document.getElementById('logs');
   logsTitle.style.fontFamily = 'monospace';
@@ -168,6 +175,7 @@ function setup() {
 function draw() {
   cursor('');
   background(bgColor);
+  drawToggleButton();
   drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET', true, false);
   drawButton(enqueueButtonPos.x, enqueueButtonPos.y, 'ENQUEUE', true, false);
   drawButton(issueButtonPos.x, issueButtonPos.y, 'ISSUE', false, true);
@@ -182,6 +190,53 @@ function draw() {
   drawText();
   drawTitleCard();
   drawLastIssued();
+}
+
+function drawToggleButton() {
+  let hover = false;
+  if (mouseHover({x: switchPos - switchSize/4, y: switchPos - switchSize/4}, switchSize/2, switchSize/2)) {
+    hover = true;
+    cursor('pointer');
+  }
+  if (darkMode) {
+    for (let i = 0; i < 4; i++) {
+      push();
+      translate(switchPos, switchPos);
+      rotate(i*PI/4);
+      stroke(hover ? 255-bgColor : titleColor);
+      strokeWeight(0.9*s);
+      line(-switchSize/4, 0, switchSize/4, 0);
+      pop();
+    }
+    fill(bgColor);
+    ellipse(switchPos, switchPos, switchSize/2.3);
+  } 
+  fill(hover ? 255-bgColor : titleColor);
+  noStroke();
+  ellipse(switchPos, switchPos, switchSize/3);
+  fill(bgColor);
+  if (!darkMode) {
+    ellipse(switchPos+switchSize/12, switchPos, switchSize*0.6/3);
+  } else {
+    ellipse(switchPos, switchPos, switchSize*0.6/3);
+  }
+}
+
+function updateColors() {
+  bgColor = darkMode ? 0 : 255;
+  document.body.style.backgroundColor = `rgb(${bgColor},${bgColor},${bgColor})`;
+  tableBgColor = darkMode ? 15 : 240;
+  tableLabelColor = darkMode ? 100 : 70;
+  tableStrokeColor = darkMode ? 100 : 100;
+  cdbStrokeColor = darkMode ? 100 : 100;
+  titleColor = darkMode ? 130 : 60;
+  document.getElementById('textArea').style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
+  document.getElementById('logs').style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
+  document.getElementById('logsTitle').style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
+  tableTextColor = darkMode ? 150 : 50;
+  tableTextDefaultColor = darkMode ? 50 : 160;
+  buttonHighlightColor = darkMode ? 200 : 200;
+  secondaryStrokeColor = darkMode ? 35 : 200;
 }
 
 function updateLogs(log) {
@@ -200,7 +255,7 @@ function drawButton(x, y, label, connectLeft = true, connectRight = true) {
     }
   }
   setConfigTableRows(tableOuterStrokeWidth);
-  if (label !== 'EXECUTE' && mouseX > x && mouseX < x+buttonWidth && mouseY > y && mouseY < y + rowHeight) {
+  if (label !== 'EXECUTE' && mouseHover({x: x, y: y}, buttonWidth, rowHeight)) {
     stroke(buttonHighlightColor);
     cursor('pointer');
   }
@@ -221,7 +276,7 @@ function drawInstructionUnit() {
 
 function drawTitleCard() {
   strokeWeight(tableInnerStrokeWidth);
-  stroke(tableStrokeColor, 255*tableInnerStrokeOpacity);
+  stroke(secondaryStrokeColor);
   fill(bgColor);
   rect(rsALU.pos.x + buttonWidth + tableSeparation, tablePaddingTop, rsALU.width + rsLSU.width - buttonWidth, 47*s);
   strokeWeight(0);
@@ -243,7 +298,7 @@ function drawTitleCard() {
 
 function drawLastIssued() {
   setConfigTableRows(tableOuterStrokeWidth);
-  stroke(tableStrokeColor*0.35);
+  stroke(secondaryStrokeColor);
   rect(issueButtonPos.x + buttonWidth + tableSeparation, issueButtonPos.y, rsALU.width + rsLSU.width - buttonWidth, rowHeight);
   line(issueButtonPos.x + buttonWidth + tableSeparation + 16*s, issueButtonPos.y, issueButtonPos.x + buttonWidth + tableSeparation + 16*s, issueButtonPos.y + rowHeight);
   setConfigLabels(labelTextSize, 'left');
@@ -655,6 +710,8 @@ function mouseClicked() {
     issue();
   // } else if (mouseHover(executeButtonPos, buttonWidth, rowHeight)) {
   //   execute();
+  } else if (mouseHover({x: switchPos - switchSize/4, y: switchPos - switchSize/4}, switchSize/2, switchSize/2)) {
+    toggleDarkMode();
   }
 }
 
@@ -846,4 +903,9 @@ function formatInstructionDisplay(instruction) {
     }
   } catch (e) {}
   return '';
+}
+
+function toggleDarkMode() {
+  darkMode = !darkMode;
+  updateColors();
 }

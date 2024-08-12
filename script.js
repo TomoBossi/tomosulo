@@ -87,7 +87,7 @@ function setup() {
   versionTextSize = 4.55*s;
   buttonWidth = 40*s;
 
-  createCanvas(windowWidth*0.975, 3*tablePaddingTop + numRegisters*rowHeight);
+  createCanvas(windowWidth*0.975, 2.7*tablePaddingTop + numRegisters*rowHeight);
   
   registerLabels = [];
   for (let i = 0; i < numRegisters; i++) {
@@ -161,7 +161,7 @@ function setup() {
   logsText.style.fontFamily = 'monospace';
   logsText.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   logsText.style.position = 'absolute';
-  logsText.style.top = `${height-13*s}px`;
+  logsText.style.top = `${height-12*s}px`;
   logsText.style.left = `${tablePaddingLeft-0.5*s}px`;
 }
   

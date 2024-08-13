@@ -112,8 +112,8 @@ function setup() {
   inputField.style.position = 'absolute';
   inputField.style.width = `${inst.width-tableOuterStrokeWidth-2*s}px`;
   inputField.rows = numInstructions;
-  inputField.style.left = `${tablePaddingLeft+s}px`;
-  inputField.style.top = `${tablePaddingTop+s}px`;
+  inputField.style.left = `${tablePaddingLeft+2*s}px`;
+  inputField.style.top = `${tablePaddingTop+1.9*s}px`;
   inputField.style.resize = 'none';
   inputField.style.overflow = 'hidden';
   inputField.style.fontFamily = 'monospace';
@@ -132,7 +132,7 @@ function setup() {
   inputField.style.borderWidth = `${tableOuterStrokeWidth}px`;
   inputField.style.borderColor = `rgb(${tableLabelColor},${tableLabelColor},${tableLabelColor})`;
   inputField.style.outline = 'none';
-  inputField.style.padding = 0.1*s;
+  inputField.style.padding = 0.2*s;
   inputField.style.fontSize = `${5*s}px`;
   inputField.style.lineHeight = `${6.9*s}px`;
 

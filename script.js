@@ -76,7 +76,7 @@ function setup() {
   textFont('Courier New');
   smooth();
   
-  s = windowWidth/425; // Eyeballed (praise the lord :praying-hands-emoji:)
+  s = windowWidth/424; // Eyeballed (praise the lord :praying-hands-emoji:)
 
   tableOuterStrokeWidth = s;
   tableInnerStrokeWidth = s;
@@ -89,11 +89,11 @@ function setup() {
   tablePaddingLeft = 12.5*s;
   tablePaddingTop = 12.5*s;
   cdbY = 1.75*tablePaddingTop + numRegisters*rowHeight;
-  titleTextSize = 12.2*s;
-  versionTextSize = 4.46*s;
+  titleTextSize = 12.15*s;
+  versionTextSize = 4.4*s;
   buttonWidth = 40*s;
 
-  createCanvas(windowWidth*0.98, 2.5*tablePaddingTop + numRegisters*rowHeight);
+  createCanvas(windowWidth*0.977, 2.5*tablePaddingTop + numRegisters*rowHeight);
   
   registerLabels = [];
   for (let i = 0; i < numRegisters; i++) {
@@ -473,8 +473,8 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft + 2*tableSeparation + inst.width + rsALU.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
       rows: numInstructions-2,
-      width: 58*s,
-      divs: [15.5*s, 25.5*s, 48*s],
+      width: 56*s,
+      divs: [13.5*s, 23.5*s, 46*s],
       columnLabels: ['Code', 'Tag', 'Op.1', 'V'],
       rowLabels: [],
       initValue: {opcode: '', operands: [{tag: '', value: 0, v: 0}]},

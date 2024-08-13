@@ -12,7 +12,7 @@ const supportedInstructionsMap = {
   OR:  {fn: or,  numArgs: 2, rs: 'ALU'},
   MOV: {fn: () => {}, numArgs: 1, rs: 'LSU'},
   LDR: {fn: ld, numArgs: 1, rs: 'LSU'},
-  // STR: {fn: st, numArgs: 1},
+  // STR: {fn: st, numArgs: 1, rs: 'LSU'}
 };
 
 let darkMode = true;
@@ -68,6 +68,7 @@ let resetButtonPos = {x: 0, y: 0};
 let enqueueButtonPos = {x: 0, y: 0};
 let issueButtonPos = {x: 0, y: 0};
 let executeButtonPos = {x: 0, y: 0};
+let lastIssuedButton = {x: 0, y: 0, w: 0};
 let switchPos;
 let switchSize;
 
@@ -75,23 +76,24 @@ function setup() {
   textFont('Courier New');
   smooth();
   
-  s = windowWidth/428; // Eyeballed (praise the lord :praying-hands-emoji:)
+  s = windowWidth/425; // Eyeballed (praise the lord :praying-hands-emoji:)
 
   tableOuterStrokeWidth = s;
   tableInnerStrokeWidth = s;
   tableInnerStrokeOpacity = 0.35;
   rowHeight = 10*s;
-  labelTextSize = 5*s;
+  labelTextSize = 4.8*s;
+  tableInnerTextSize = 5*s;
   rowLabelTextShift = -2*s;
   tableSeparation = 20*s;
   tablePaddingLeft = 12.5*s;
   tablePaddingTop = 12.5*s;
   cdbY = 1.75*tablePaddingTop + numRegisters*rowHeight;
-  titleTextSize = 12.5*s;
-  versionTextSize = 4.55*s;
+  titleTextSize = 12.2*s;
+  versionTextSize = 4.46*s;
   buttonWidth = 40*s;
 
-  createCanvas(windowWidth*0.975, 2.7*tablePaddingTop + numRegisters*rowHeight);
+  createCanvas(windowWidth*0.98, 2.5*tablePaddingTop + numRegisters*rowHeight);
   
   registerLabels = [];
   for (let i = 0; i < numRegisters; i++) {
@@ -155,6 +157,7 @@ function setup() {
   enqueueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 1.2*rowHeight};
   issueButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight}; // 3.7*rowHeight};
   // executeButtonPos = {x: resetButtonPos.x, y: tablePaddingTop + 4.9*rowHeight};
+  lastIssuedButton = {x: issueButtonPos.x + buttonWidth + tableSeparation, y: issueButtonPos.y, w: 16*s};
 
   switchPos = 6.5*s;
   switchSize = 12*s;
@@ -170,15 +173,15 @@ function setup() {
   logsText.style.fontFamily = 'monospace';
   logsText.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   logsText.style.position = 'absolute';
-  logsText.style.top = `${height-12*s}px`;
+  logsText.style.top = `${height-14*s}px`;
   logsText.style.left = `${tablePaddingLeft-0.5*s}px`;
   logsText.style.fontSize = `${3.5*s}px`;
+  logsText.style.lineHeight = `${4.5*s}px`;
 }
   
 function draw() {
   cursor('');
   background(bgColor);
-  drawToggleButton();
   drawButton(resetButtonPos.x, resetButtonPos.y, 'RESET', true, false);
   drawButton(enqueueButtonPos.x, enqueueButtonPos.y, 'ENQUEUE', true, false);
   drawButton(issueButtonPos.x, issueButtonPos.y, 'ISSUE', false, true);
@@ -193,6 +196,23 @@ function draw() {
   drawText();
   drawTitleCard();
   drawLastIssued();
+  drawToggleButton();
+  highlightPersistent();
+}
+
+function highlightPersistent() {
+  if (mouseHover(lastIssuedButton, lastIssuedButton.w, rowHeight)) {
+    for (let table of [rsALU, rsLSU, inst, rat, reg]) {
+      for (let [i, highlight] of table.highlightPersistent.entries()) {
+        if (highlight === 1) {
+          table.highlight[i] = 0.65;
+        }
+      }
+    }
+    setConfigTableRows(tableOuterStrokeWidth);
+    noFill();
+    rect(lastIssuedButton.x, lastIssuedButton.y, lastIssuedButton.w, rowHeight);
+  }
 }
 
 function drawToggleButton() {
@@ -271,7 +291,7 @@ function drawButton(x, y, label, connectLeft = true, connectRight = true) {
 
 function drawInstructionUnit() {
   setConfigTableRows(tableOuterStrokeWidth);
-  line(inst.pos.x + inst.width/2, tablePaddingTop, inst.pos.x + inst.width/2, inst.pos.y - rowHeight);
+  line(inst.pos.x + inst.width/2, tablePaddingTop, inst.pos.x + inst.width/2, inst.pos.y - 0.95*rowHeight);
   rect(tablePaddingLeft, tablePaddingTop, inst.width, 59*s);
   setConfigLabels(labelTextSize, 'center');
   text('Instruction Unit', inst.pos.x+inst.width/2, tablePaddingTop-0.8*rowHeight/2);
@@ -302,12 +322,12 @@ function drawTitleCard() {
 function drawLastIssued() {
   setConfigTableRows(tableOuterStrokeWidth);
   stroke(secondaryStrokeColor);
-  rect(issueButtonPos.x + buttonWidth + tableSeparation, issueButtonPos.y, rsALU.width + rsLSU.width - buttonWidth, rowHeight);
-  line(issueButtonPos.x + buttonWidth + tableSeparation + 16*s, issueButtonPos.y, issueButtonPos.x + buttonWidth + tableSeparation + 16*s, issueButtonPos.y + rowHeight);
+  rect(lastIssuedButton.x, lastIssuedButton.y, rsALU.width + rsLSU.width - buttonWidth, rowHeight);
+  line(lastIssuedButton.x + lastIssuedButton.w, lastIssuedButton.y, issueButtonPos.x + buttonWidth + tableSeparation + 16*s, issueButtonPos.y + rowHeight);
   setConfigLabels(labelTextSize, 'left');
-  text('LAST', issueButtonPos.x + buttonWidth + tableSeparation + 2*s, issueButtonPos.y + rowHeight/2 + 0.5*s);
+  text('LAST', lastIssuedButton.x + 2.5*s, lastIssuedButton.y + rowHeight/2 + 0.5*s);
   fill(titleColor);
-  text(lastIssued, issueButtonPos.x + buttonWidth + tableSeparation + 18*s, issueButtonPos.y + rowHeight/2 + 0.5*s);
+  text(lastIssued, issueButtonPos.x + buttonWidth + tableSeparation + 18.2*s, issueButtonPos.y + rowHeight/2 + 0.5*s);
 }
 
 function drawCDB() {
@@ -355,11 +375,11 @@ function drawTable(table, tag = false, init = false) {
   setConfigLabels(labelTextSize, 'center');
   for (let [i, label] of table.columnLabels.entries()) {
     if (i == 0) {
-      text(label, table.pos.x+(table.divs[i]/2), table.pos.y-rowHeight/2);
+      text(label, table.pos.x+(table.divs[i]/2), table.pos.y-0.8*rowHeight/2);
     } else if (i == table.columnLabels.length - 1) {
-      text(label, table.pos.x+table.divs[i-1]+(table.width-table.divs[i-1])/2, table.pos.y-rowHeight/2);
+      text(label, table.pos.x+table.divs[i-1]+(table.width-table.divs[i-1])/2, table.pos.y-0.8*rowHeight/2);
     } else {
-      text(label, table.pos.x+table.divs[i-1]+(table.divs[i]-table.divs[i-1])/2, table.pos.y-rowHeight/2);
+      text(label, table.pos.x+table.divs[i-1]+(table.divs[i]-table.divs[i-1])/2, table.pos.y-0.8*rowHeight/2);
     }
   }
 
@@ -425,6 +445,7 @@ function initTables() {
       initValue: {instruction: ''},
       values: [],
       highlight: Array(numInstructions).fill(0),
+      highlightPersistent: Array(numInstructions).fill(0),
       outputValue: {},
       outputLabel: ''
     }, false, true
@@ -434,14 +455,15 @@ function initTables() {
     {
       pos: {x: tablePaddingLeft + tableSeparation + inst.width, y: tablePaddingTop + rowHeight*(numRegisters-numInstructions)},
       rows: numInstructions-2,
-      width: 100.5*s,
-      divs: [15.5*s, 25.5*s, 48*s, 58*s, 68*s, 90.5*s],
+      width: 98.5*s,
+      divs: [13.5*s, 23.5*s, 46*s, 56*s, 66*s, 88.5*s],
       columnLabels: ['Code', 'Tag', 'Op.1', 'V', 'Tag', 'Op.2', 'V'],
       rowLabels: [],
       initValue: {opcode: '', operands: [{tag: '', value: 0, v: 0}, {tag: '', value: 0, v: 0}]},
       values: [],
       free: Array(numInstructions-2).fill(true),
       highlight: Array(numInstructions-2).fill(0),
+      highlightPersistent: Array(numInstructions-2).fill(0),
       outputValue: {tag: '', value: 0},
       outputLabel: 'Arithmetic-Logic' // 'Arithmetic-Logic Unit'
     }, true, true
@@ -459,6 +481,7 @@ function initTables() {
       values: [],
       free: Array(numInstructions-2).fill(true),
       highlight: Array(numInstructions-2).fill(0),
+      highlightPersistent: Array(numInstructions-2).fill(0),
       outputValue: {tag: '', value: 0},
       outputLabel: 'Load' // 'Load-Store Unit'
     }, true, true
@@ -475,6 +498,7 @@ function initTables() {
       initValue: {tag: '', value: 0, v: 0},
       values: [],
       highlight: Array(numRegisters).fill(0),
+      highlightPersistent: Array(numRegisters).fill(0),
       outputValue: {},
       outputLabel: ''
     }, false, true
@@ -491,6 +515,7 @@ function initTables() {
       initValue: {value: 0},
       values: [],
       highlight: Array(numRegisters).fill(0),
+      highlightPersistent: Array(numRegisters).fill(0),
       outputValue: {},
       outputLabel: ''
     }, false, true
@@ -561,12 +586,18 @@ function issue() {
     let tokens = instruction.split(', ');
     tokens = tokens[0].split(' ').concat(tokens.slice(1));
   
-    // Check that issuing is possible TODO
+    // Check that issuing is possible
     const freeALUentries = rsALU.free.filter(e => e === true).length;
     const freeLSUentries = rsLSU.free.filter(e => e === true).length;
     const requiredALUentries = supportedInstructionsMap[tokens[0]].rs === 'ALU' ? 1 : 0;
     const requiredLSUentries = tokens.slice(1).filter(e => e[0] === '[').length;
     if (freeALUentries >= requiredALUentries && freeLSUentries >= requiredLSUentries) {
+      // Delete previous persistent highlights
+      rsALU.highlightPersistent = rsALU.highlightPersistent.map(() => 0);
+      rsLSU.highlightPersistent = rsALU.highlightPersistent.map(() => 0);
+      inst.highlightPersistent = rsALU.highlightPersistent.map(() => 0);
+      rat.highlightPersistent = rsALU.highlightPersistent.map(() => 0);
+      reg.highlightPersistent = rsALU.highlightPersistent.map(() => 0);
       // Parse instruction
       if (supportedInstructionsMap[tokens[0]].rs === 'LSU') { // tokens[0] === 'MOV'
         issueMov(tokens); // MOV is treated as a special case
@@ -583,52 +614,48 @@ function issue() {
             rsALU.free[indexOfNextFreeOutputRsEntry] = false;
             rsALU.values[indexOfNextFreeOutputRsEntry].opcode = tokens[0];
             rsALU.highlight[indexOfNextFreeOutputRsEntry] = 1;
+            rsALU.highlightPersistent[indexOfNextFreeOutputRsEntry] = 1;
           }
 
           if (operand[0] === '[') {
-            indexOfNextFreeRsEntry = rsLSU.free.indexOf(true);
-            rsLSU.free[indexOfNextFreeRsEntry] = false;
             if (operand[1] === '0') {
-              rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'LDR', operands: [{tag: '~', value: Number(operand.slice(1, -1), 16), v: 1}]};
-              rsLSU.highlight[indexOfNextFreeRsEntry] = 1;
+              indexOfNextFreeRsEntry = loadInstructionToRs(rsLSU, 'LDR', [{tag: '~', value: Number(operand.slice(1, -1), 16), v: 1}, {tag: '~', value: '~', v: '~'}]);
             } else {
               indexOfReg = Number(operand.slice(2, -1));
               initRegOp(indexOfReg);
-              rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'LDR', operands: [deepCopy(rat.values[indexOfReg])]};
-              rsLSU.highlight[indexOfNextFreeRsEntry] = 1;
+              indexOfNextFreeRsEntry = loadInstructionToRs(rsLSU, 'LDR', [deepCopy(rat.values[indexOfReg]), {tag: '~', value: '~', v: '~'}]);
             }
             rsALU.values[indexOfNextFreeOutputRsEntry].operands[i].tag = rsLSU.rowLabels[indexOfNextFreeRsEntry];
-            rsALU.highlight[indexOfNextFreeOutputRsEntry] = 1;
           } 
           
           else if (operand[0] === '0') {
             rsALU.values[indexOfNextFreeOutputRsEntry].operands[i] = {tag: '~', value: Number(operand, 16), v: 1};
-            rsALU.highlight[indexOfNextFreeOutputRsEntry] = 1;
           }
 
           else {
             indexOfReg = Number(operand.slice(1));
             initRegOp(indexOfReg);
             rsALU.values[indexOfNextFreeOutputRsEntry].operands[i] = deepCopy(rat.values[indexOfReg]);
-            rsALU.highlight[indexOfNextFreeOutputRsEntry] = 1;
           }
         }
         
         // Update RAT
         let outputReg = null;
-        if (tokens[1][0] === '[') {
-          outputReg = Number(tokens[1].slice(2, -1));
-          indexOfNextFreeRsEntry = rsLSU.free.indexOf(true);
-          rsLSU.free[indexOfNextFreeRsEntry] = false;
+        let loadReg = null;
+        if (tokens[1].slice(0, 2) === '[R') {
+          loadReg = Number(tokens[1].slice(2, -1));
+          initRegOp(loadReg);
+          indexOfNextFreeRsEntry = loadInstructionToRs(rsLSU, 'STR', [deepCopy(rat.values[loadReg]), {tag: rsALU.rowLabels[indexOfNextFreeOutputRsEntry], value: 0, v: 0}]);
+        } else if (tokens[1].slice(0, 2) === '[0') {
+          indexOfNextFreeRsEntry = loadInstructionToRs(rsLSU, 'STR', [{tag: '~', value: Number(tokens[1].slice(1, -1), 16), v: 1}, {tag: rsALU.rowLabels[indexOfNextFreeOutputRsEntry], value: 0, v: 0}]);
         } else {
           outputReg = Number(tokens[1].slice(1));
         }
-        rat.values[outputReg].tag = rsALU.rowLabels[indexOfNextFreeOutputRsEntry];
-        rat.values[outputReg].v = 0;
-        rat.highlight[outputReg] = 1;
-        if (tokens[1][0] === '[') {
-          rsLSU.values[indexOfNextFreeRsEntry] = {opcode: 'STR', operands: [deepCopy(rat.values[outputReg])]};
-          rsLSU.highlight[indexOfNextFreeRsEntry] = 1;
+        if (outputReg != null) {
+          rat.values[outputReg].tag = rsALU.rowLabels[indexOfNextFreeOutputRsEntry];
+          rat.values[outputReg].v = 0;
+          rat.highlight[outputReg] = 1;
+          rat.highlightPersistent[outputReg] = 1;
         }
       }
 
@@ -660,8 +687,10 @@ function issueMov(tokens) {
       indexOfRegDest = Number(tokens[1].slice(1));
       reg.values[indexOfRegDest].value = Number(tokens[2], 16);
       reg.highlight[indexOfRegDest] = 1;
+      reg.highlightPersistent[indexOfRegDest] = 1;
       rat.values[indexOfRegDest] = {tag: '~', value: Number(tokens[2], 16), v: 1};
       rat.highlight[indexOfRegDest] = 1;
+      rat.highlightPersistent[indexOfRegDest] = 1;
     }
     // ...memory pointed by reg (STR) TODO
     // else if (tokens[1].slice(0, 2) === '[R') {
@@ -682,9 +711,11 @@ function issueMov(tokens) {
       if (rat.values[indexOfRegOp].v == 1) {
         reg.values[indexOfRegDest].value = reg.values[indexOfRegOp].value;
         reg.highlight[indexOfRegDest] = 1;
+        reg.highlightPersistent[indexOfRegDest] = 1;
       }
       rat.values[indexOfRegDest] = deepCopy(rat.values[indexOfRegOp]);
       rat.highlight[indexOfRegDest] = 1;
+      rat.highlightPersistent[indexOfRegDest] = 1;
     }
     // ...memory pointed by reg (STR) TODO
     // ...memory pointed by imm (STR) TODO
@@ -697,9 +728,10 @@ function issueMov(tokens) {
     // ...reg (LDR)
     if (tokens[1][0] === 'R') {
       indexOfRegDest = Number(tokens[1].slice(1));
-      indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [deepCopy(rat.values[indexOfRegOp])]);
+      indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [deepCopy(rat.values[indexOfRegOp]), {tag: '~', value: '~', v: '~'}]);
       rat.values[indexOfRegDest].tag = rsLSU.rowLabels[indexOfInstruction];
       rat.highlight[indexOfRegDest] = 1;
+      rat.highlightPersistent[indexOfRegDest] = 1;
     }
     // ...memory pointed by reg (LDR + STR) TODO
     // ...memory pointed by imm (LDR + STR) TODO
@@ -710,9 +742,10 @@ function issueMov(tokens) {
     // ...reg (LDR)
     if (tokens[1][0] === 'R') {
       indexOfRegDest = Number(tokens[1].slice(1));
-      indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [{tag: '~', value: Number(tokens[2].slice(1, -1)), v: 1}]);
+      indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [{tag: '~', value: Number(tokens[2].slice(1, -1)), v: 1}, {tag: '~', value: '~', v: '~'}]);
       rat.values[indexOfRegDest].tag = rsLSU.rowLabels[indexOfInstruction];
       rat.highlight[indexOfRegDest] = 1;
+      rat.highlightPersistent[indexOfRegDest] = 1;
     }
     // ...memory pointed by reg (LDR + STR) TODO
     // ...memory pointed by imm (LDR + STR) TODO
@@ -723,6 +756,7 @@ function initRegOp(indexOfReg) {
   if (deepEqual(rat.values[indexOfReg], rat.initValue)) {
     rat.values[indexOfReg] = {tag: '~', value: reg.values[indexOfReg].value, v: 1};
     rat.highlight[indexOfReg] = 1;
+    rat.highlightPersistent[indexOfReg] = 1;
   }
 }
 
@@ -732,11 +766,12 @@ function loadInstructionToRs(rs, opcode, operands) {
   rs.values[indexOfNextFreeRsEntry].opcode = opcode;
   rs.values[indexOfNextFreeRsEntry].operands = operands;
   rs.highlight[indexOfNextFreeRsEntry] = 1;
+  rs.highlightPersistent[indexOfNextFreeRsEntry] = 1;
   return indexOfNextFreeRsEntry;
 }
 
 function execute() {
-  console.log('TODO');
+  console.log('...doing this would be too hard');
 }
 
 function mouseHover(pos, w, h) {
@@ -811,18 +846,19 @@ function int2hex(value) {
 }
 
 function drawTextRs(rs) {
-  setConfigTableText();
   for (let [i, value] of rs.values.entries()) {
+    setConfigTableText();
+    textSize(tableInnerTextSize);
     fill(tableTextColor);
     if (deepEqual(value, rs.initValue)) {
       fill(tableTextDefaultColor);
     }
-    text(value.opcode, rs.pos.x + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(value.opcode, rs.pos.x + 2.3*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     text(value.operands[0].tag, rs.pos.x + rs.divs[0] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     if (value.operands[0].v == 0) {
       fill(tableTextDefaultColor);
     }
-    text(int2hex(value.operands[0].value), rs.pos.x + rs.divs[1] + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(int2hex(value.operands[0].value), rs.pos.x + rs.divs[1] + 2.2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     text(value.operands[0].v, rs.pos.x + rs.divs[2] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     if (value.operands.length > 1) {
       fill(tableTextColor);
@@ -830,14 +866,20 @@ function drawTextRs(rs) {
       if (value.operands[1].v == 0) {
         fill(tableTextDefaultColor);
       }
-      text(int2hex(value.operands[1].value), rs.pos.x + rs.divs[4] + 2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
       text(value.operands[1].v, rs.pos.x + rs.divs[5] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+      if (value.operands[1].value === '~') {
+        textAlign('center');
+        text('~', rs.pos.x + rs.divs[4] + (rs.divs[5] - rs.divs[4])/2, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+      } else {
+        text(int2hex(value.operands[1].value), rs.pos.x + rs.divs[4] + 2.2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+      }
     }
   }
 }
 
 function drawTextRAT() {
   setConfigTableText();
+  textSize(tableInnerTextSize);
   for (let [i, value] of rat.values.entries()) {
     fill(tableTextColor);
     if (deepEqual(value, rat.initValue)) {
@@ -847,24 +889,26 @@ function drawTextRAT() {
     if (value.v == 0) {
       fill(tableTextDefaultColor);
     }
-    text(int2hex(value.value), rat.pos.x + rat.divs[0] + 2*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(int2hex(value.value), rat.pos.x + rat.divs[0] + 2.2*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
     text(value.v, rat.pos.x + rat.divs[1] + 3.5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
   }
 }
 
 function drawTextReg() {
   setConfigTableText();
+  textSize(tableInnerTextSize);
   fill(tableTextColor);
   for (let [i, value] of reg.values.entries()) {
-    text(int2hex(value.value), reg.pos.x + 2*s, reg.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(int2hex(value.value), reg.pos.x + 2.2*s, reg.pos.y + (i+0.5)*rowHeight + 0.5*s);
   }
 }
 
 function drawTextInst() {
   setConfigTableText();
+  textSize(tableInnerTextSize);
   fill(tableTextColor);
   for (let [i, value] of inst.values.entries()) {
-    text(value.instruction, inst.pos.x + 2*s, inst.pos.y + numInstructions*rowHeight - (i+0.5)*rowHeight + 0.5*s);
+    text(value.instruction, inst.pos.x + 2.3*s, inst.pos.y + numInstructions*rowHeight - (i+0.5)*rowHeight + 0.5*s);
   }
 }
 
@@ -938,7 +982,7 @@ function formatInstructionDisplay(instruction) {
     let instructionSupported = supportedInstructionsMap.hasOwnProperty(tokens[0]);
     let matchingNumArgs = tokens.length - 2 === supportedInstructionsMap[tokens[0]].numArgs;
     let secondTokenIsRegister = isRegister(tokens[1]);
-    let secondTokenIsntStore = tokens[1][0] !== '['; // STR not implemented TODO
+    let secondTokenIsntStore = tokens[1][0] !== '[';
     let allArgsAreRegistersOrValues = areRegistersOrValues(tokens.slice(2));
     if (instructionSupported && matchingNumArgs && secondTokenIsRegister && allArgsAreRegistersOrValues && secondTokenIsntStore) {
       return tokens[0] + ' ' + tokens.slice(1).map(token => formatArg(token)).join(', ');

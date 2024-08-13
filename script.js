@@ -89,8 +89,8 @@ function setup() {
   tablePaddingLeft = 12.5*s;
   tablePaddingTop = 12.5*s;
   cdbY = 1.75*tablePaddingTop + numRegisters*rowHeight;
-  titleTextSize = 12.15*s;
-  versionTextSize = 4.4*s;
+  titleTextSize = 11.925*s;
+  versionTextSize = 4.32*s;
   buttonWidth = 40*s;
 
   createCanvas(windowWidth*0.977, 2.5*tablePaddingTop + numRegisters*rowHeight);
@@ -167,16 +167,18 @@ function setup() {
   logsTitle.style.fontFamily = 'monospace';
   logsTitle.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   logsTitle.style.position = 'absolute';
-  logsTitle.style.top = `${height-21.75*s}px`;
+  logsTitle.style.top = `${height-16*s}px`;
   logsTitle.style.left = `${tablePaddingLeft}px`;
-  logsTitle.style.fontSize = `${4.5*s}px`;
+  logsTitle.style.fontSize = `${4*s}px`;
+  logsTitle.style.fontWeight = 'bold';
+  logsTitle.style.lineHeight = `${4.2*s}px`;
   logsText.style.fontFamily = 'monospace';
   logsText.style.color = `rgb(${titleColor},${titleColor},${titleColor})`;
   logsText.style.position = 'absolute';
-  logsText.style.top = `${height-14*s}px`;
+  logsText.style.top = `${height-10.5*s}px`;
   logsText.style.left = `${tablePaddingLeft-0.5*s}px`;
   logsText.style.fontSize = `${3.5*s}px`;
-  logsText.style.lineHeight = `${4.5*s}px`;
+  logsText.style.lineHeight = `${4*s}px`;
 }
   
 function draw() {
@@ -311,7 +313,7 @@ function drawTitleCard() {
   textSize(versionTextSize);
   text('v0.0.0.0.1 - Cannot be trusted', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + 3*s);
   textSize(versionTextSize*0.78);
-  const yOffset = 12*s;
+  const yOffset = 11.7*s;
   text('Features:', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset);
   text('- Read-only Memory (REAL safety for REAL programmers)', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 5*s);
   text('- 16 whole 16-bit Registers', rsALU.pos.x + buttonWidth + tableSeparation + 3*s, tablePaddingTop + titleTextSize + yOffset + 9*s);
@@ -324,10 +326,11 @@ function drawLastIssued() {
   stroke(secondaryStrokeColor);
   rect(lastIssuedButton.x, lastIssuedButton.y, rsALU.width + rsLSU.width - buttonWidth, rowHeight);
   line(lastIssuedButton.x + lastIssuedButton.w, lastIssuedButton.y, issueButtonPos.x + buttonWidth + tableSeparation + 16*s, issueButtonPos.y + rowHeight);
-  setConfigLabels(labelTextSize, 'left');
-  text('LAST', lastIssuedButton.x + 2.5*s, lastIssuedButton.y + rowHeight/2 + 0.5*s);
+  setConfigLabels(labelTextSize, 'center');
+  text('LAST', lastIssuedButton.x + lastIssuedButton.w/2, lastIssuedButton.y + rowHeight/2 + 0.5*s);
   fill(titleColor);
-  text(lastIssued, issueButtonPos.x + buttonWidth + tableSeparation + 18.2*s, issueButtonPos.y + rowHeight/2 + 0.5*s);
+  textAlign('left');
+  text(lastIssued, lastIssuedButton.x + lastIssuedButton.w + 2.3*s, issueButtonPos.y + rowHeight/2 + 0.5*s);
 }
 
 function drawCDB() {
@@ -854,24 +857,25 @@ function drawTextRs(rs) {
       fill(tableTextDefaultColor);
     }
     text(value.opcode, rs.pos.x + 2.3*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
-    text(value.operands[0].tag, rs.pos.x + rs.divs[0] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    textAlign('center');
+    text(value.operands[0].tag, rs.pos.x + rs.divs[0] + 5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     if (value.operands[0].v == 0) {
       fill(tableTextDefaultColor);
     }
-    text(int2hex(value.operands[0].value), rs.pos.x + rs.divs[1] + 2.2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
-    text(value.operands[0].v, rs.pos.x + rs.divs[2] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(int2hex(value.operands[0].value), rs.pos.x + rs.divs[1] + 11.25*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(value.operands[0].v, rs.pos.x + rs.divs[2] + 5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
     if (value.operands.length > 1) {
       fill(tableTextColor);
-      text(value.operands[1].tag, rs.pos.x + rs.divs[3] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+      text(value.operands[1].tag, rs.pos.x + rs.divs[3] + 5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
       if (value.operands[1].v == 0) {
         fill(tableTextDefaultColor);
       }
-      text(value.operands[1].v, rs.pos.x + rs.divs[5] + 3.5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+      text(value.operands[1].v, rs.pos.x + rs.divs[5] + 5*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
       if (value.operands[1].value === '~') {
         textAlign('center');
         text('~', rs.pos.x + rs.divs[4] + (rs.divs[5] - rs.divs[4])/2, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
       } else {
-        text(int2hex(value.operands[1].value), rs.pos.x + rs.divs[4] + 2.2*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
+        text(int2hex(value.operands[1].value), rs.pos.x + rs.divs[4] + 11.25*s, rs.pos.y + (i+0.5)*rowHeight + 0.5*s);
       }
     }
   }
@@ -880,17 +884,18 @@ function drawTextRs(rs) {
 function drawTextRAT() {
   setConfigTableText();
   textSize(tableInnerTextSize);
+  textAlign('center');
   for (let [i, value] of rat.values.entries()) {
     fill(tableTextColor);
     if (deepEqual(value, rat.initValue)) {
       fill(tableTextDefaultColor);
     }
-    text(value.tag, rat.pos.x + 3.5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(value.tag, rat.pos.x + 5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
     if (value.v == 0) {
       fill(tableTextDefaultColor);
     }
-    text(int2hex(value.value), rat.pos.x + rat.divs[0] + 2.2*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
-    text(value.v, rat.pos.x + rat.divs[1] + 3.5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(int2hex(value.value), rat.pos.x + rat.divs[0] + 11.25*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(value.v, rat.pos.x + rat.divs[1] + 5*s, rat.pos.y + (i+0.5)*rowHeight + 0.5*s);
   }
 }
 
@@ -898,8 +903,9 @@ function drawTextReg() {
   setConfigTableText();
   textSize(tableInnerTextSize);
   fill(tableTextColor);
+  textAlign('center');
   for (let [i, value] of reg.values.entries()) {
-    text(int2hex(value.value), reg.pos.x + 2.2*s, reg.pos.y + (i+0.5)*rowHeight + 0.5*s);
+    text(int2hex(value.value), reg.pos.x + 11.25*s, reg.pos.y + (i+0.5)*rowHeight + 0.5*s);
   }
 }
 

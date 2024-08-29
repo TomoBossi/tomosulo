@@ -733,6 +733,7 @@ function issueMov(tokens) {
       indexOfRegDest = Number(tokens[1].slice(1));
       indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [deepCopy(rat.values[indexOfRegOp]), {tag: '~', value: '~', v: '~'}]);
       rat.values[indexOfRegDest].tag = rsLSU.rowLabels[indexOfInstruction];
+      rat.values[indexOfRegDest].v = 0;
       rat.highlight[indexOfRegDest] = 1;
       rat.highlightPersistent[indexOfRegDest] = 1;
     }
@@ -747,6 +748,7 @@ function issueMov(tokens) {
       indexOfRegDest = Number(tokens[1].slice(1));
       indexOfInstruction = loadInstructionToRs(rsLSU, 'LDR', [{tag: '~', value: Number(tokens[2].slice(1, -1)), v: 1}, {tag: '~', value: '~', v: '~'}]);
       rat.values[indexOfRegDest].tag = rsLSU.rowLabels[indexOfInstruction];
+      rat.values[indexOfRegDest].v = 0;
       rat.highlight[indexOfRegDest] = 1;
       rat.highlightPersistent[indexOfRegDest] = 1;
     }
